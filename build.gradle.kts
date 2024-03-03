@@ -35,6 +35,7 @@ dependencies {
 	implementation("org.telegram:telegrambots-spring-boot-starter:6.9.7.1")
 	implementation("org.telegram:telegrambots-abilities:6.9.7.1")
 	implementation("org.apache.commons:commons-collections4:4.4")
+	implementation("javax.xml.bind:jaxb-api:2.4.0-b180830.0359")
 	implementation("org.postgresql:postgresql")
 }
 
