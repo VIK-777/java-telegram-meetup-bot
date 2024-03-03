@@ -314,8 +314,15 @@ public class MeetupCalendarBot extends AbilityBot {
                 actionsExecutor.sendMessage(chatId, "New event was saved");
                 var buttonPairs = List.of(Pair.of("Send me notifications", SUBSCRIBE_TO_EVENT + " " + savedEvent.getEventId()),
                         Pair.of("I'll skip this one", UNSUBSCRIBE_FROM_EVENT + " " + savedEvent.getEventId()));
-                getAllSubscribedUsers().forEach(id ->
-                        actionsExecutor.sendMessage(id, savedEvent.toMessageText(), getInlineGridForPairs(buttonPairs, 1)));
+                log.info("Button pairs: {}", buttonPairs);
+                getAllSubscribedUsers().forEach(id -> {
+                    try {
+                        actionsExecutor.sendMessage(id, savedEvent.toMessageText(), getInlineGridForPairs(buttonPairs, 1));
+                        log.info("Notification was sent to user {}", id);
+                    } catch (Exception e) {
+                        log.error("Notification was not sent to user {} due to exception {}", id, e.getMessage(), e);
+                    }
+                });
                 actionsExecutor.sendMessage(chatId, "All users were notified");
                 scheduleNotifications(savedEvent);
                 actionsExecutor.sendMessage(chatId, "And notifications scheduled");
@@ -485,7 +492,9 @@ public class MeetupCalendarBot extends AbilityBot {
     }
 
     private Set<Long> getAllSubscribedUsers() {
-        return usersRepository.findAllBySendNotifications(true).stream().map(User::getUserId).collect(Collectors.toSet());
+        var users = usersRepository.findAllBySendNotifications(true);
+        log.info("Subscribed users: {}", users);
+        return users.stream().map(User::getUserId).collect(Collectors.toSet());
     }
 
     private void scheduleNotifications(Event event) {
