@@ -53,6 +53,8 @@ import java.util.stream.Stream;
 import static org.telegram.abilitybots.api.objects.Locality.USER;
 import static org.telegram.abilitybots.api.objects.Privacy.ADMIN;
 import static org.telegram.abilitybots.api.objects.Privacy.PUBLIC;
+import static org.telegram.abilitybots.api.util.AbilityUtils.addTag;
+import static org.telegram.abilitybots.api.util.AbilityUtils.fullName;
 import static org.telegram.abilitybots.api.util.AbilityUtils.getChatId;
 import static org.telegram.abilitybots.api.util.AbilityUtils.getUser;
 import static vik.telegrambots.meetupbot.utils.Constants.BOT_COMMANDS_MESSAGE;
@@ -245,7 +247,8 @@ public class MeetupCalendarBot extends AbilityBot {
                         actionsExecutor.sendMessage(chatId, "Please invoke command as /suggest <your text>");
                         return;
                     }
-                    actionsExecutor.sendMessage(creatorId, String.join(" ", ctx.arguments()));
+                    var name = ctx.user().getUserName() != null ? addTag(ctx.user().getUserName()) : fullName(ctx.user());
+                    actionsExecutor.sendMessage(creatorId, "New suggestion:\n" + name + ": " + String.join(" ", ctx.arguments()));
                     actionsExecutor.sendMessage(chatId, "Thank you! Your message was sent to the owner");
                 })
                 .build();
