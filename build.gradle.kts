@@ -27,7 +27,6 @@ dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-actuator")
 	implementation("org.springframework.boot:spring-boot-starter-data-jdbc")
 	implementation("org.springframework.boot:spring-boot-starter-data-jpa")
-	implementation("com.github.gavlyukovskiy:datasource-proxy-spring-boot-starter:1.9.1")
 	implementation("org.springframework.boot:spring-boot-starter-web")
 	compileOnly("org.projectlombok:lombok")
 	runtimeOnly("com.h2database:h2")
@@ -36,8 +35,7 @@ dependencies {
 	implementation("org.telegram:telegrambots-spring-boot-starter:6.9.7.1")
 	implementation("org.telegram:telegrambots-abilities:6.9.7.1")
 	implementation("org.apache.commons:commons-collections4:4.4")
-	implementation("org.modelmapper:modelmapper:3.2.0")
-	implementation("javax.xml.bind:jaxb-api:2.4.0-b180830.0359")
+	implementation("org.postgresql:postgresql")
 }
 
 tasks.withType<Test> {
