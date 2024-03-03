@@ -84,6 +84,8 @@ import static vik.telegrambots.meetupbot.utils.UserNotificationToggle.TOGGLE_1_D
 import static vik.telegrambots.meetupbot.utils.UserNotificationToggle.TOGGLE_1_DAY_NOTIFICATION_FROM_SETTINGS;
 import static vik.telegrambots.meetupbot.utils.UserNotificationToggle.TOGGLE_1_HOUR_NOTIFICATION;
 import static vik.telegrambots.meetupbot.utils.UserNotificationToggle.TOGGLE_1_HOUR_NOTIFICATION_FROM_SETTINGS;
+import static vik.telegrambots.meetupbot.utils.UserNotificationToggle.TOGGLE_1_WEEK_NOTIFICATION;
+import static vik.telegrambots.meetupbot.utils.UserNotificationToggle.TOGGLE_1_WEEK_NOTIFICATION_FROM_SETTINGS;
 import static vik.telegrambots.meetupbot.utils.UserNotificationToggle.TOGGLE_6_HOURS_NOTIFICATION;
 import static vik.telegrambots.meetupbot.utils.UserNotificationToggle.TOGGLE_6_HOURS_NOTIFICATION_FROM_SETTINGS;
 import static vik.telegrambots.meetupbot.utils.UserNotificationToggle.TOGGLE_NEW_EVENTS_NOTIFICATION_FROM_SETTINGS;
@@ -314,14 +316,9 @@ public class MeetupCalendarBot extends AbilityBot {
                 actionsExecutor.sendMessage(chatId, "New event was saved");
                 var buttonPairs = List.of(Pair.of("Send me notifications", SUBSCRIBE_TO_EVENT + " " + savedEvent.getEventId()),
                         Pair.of("I'll skip this one", UNSUBSCRIBE_FROM_EVENT + " " + savedEvent.getEventId()));
-                log.info("Button pairs: {}", buttonPairs);
                 getAllSubscribedUsers().forEach(id -> {
-                    try {
-                        actionsExecutor.sendMessage(id, savedEvent.toMessageText(), getInlineGridForPairs(buttonPairs, 1));
-                        log.info("Notification was sent to user {}", id);
-                    } catch (Exception e) {
-                        log.error("Notification was not sent to user {} due to exception {}", id, e.getMessage(), e);
-                    }
+                    actionsExecutor.sendMessage(id, savedEvent.toMessageText(), getInlineGridForPairs(buttonPairs, 1));
+                    log.info("Notification was sent to user {}", id);
                 });
                 actionsExecutor.sendMessage(chatId, "All users were notified");
                 scheduleNotifications(savedEvent);
@@ -340,6 +337,7 @@ public class MeetupCalendarBot extends AbilityBot {
             if (isFromSettings) {
                 notificationPairs.add(getPairForOption(userId, user.getSendNotifications(), TOGGLE_NEW_EVENTS_NOTIFICATION_FROM_SETTINGS));
             }
+            notificationPairs.add(getPairForOption(userId, user.getOneWeekNotification(), isFromSettings ? TOGGLE_1_WEEK_NOTIFICATION_FROM_SETTINGS : TOGGLE_1_WEEK_NOTIFICATION));
             notificationPairs.add(getPairForOption(userId, user.getOneDayNotification(), isFromSettings ? TOGGLE_1_DAY_NOTIFICATION_FROM_SETTINGS : TOGGLE_1_DAY_NOTIFICATION));
             notificationPairs.add(getPairForOption(userId, user.getTwelveHoursNotification(), isFromSettings ? TOGGLE_12_HOURS_NOTIFICATION_FROM_SETTINGS : TOGGLE_12_HOURS_NOTIFICATION));
             notificationPairs.add(getPairForOption(userId, user.getSixHoursNotification(), isFromSettings ? TOGGLE_6_HOURS_NOTIFICATION_FROM_SETTINGS : TOGGLE_6_HOURS_NOTIFICATION));
@@ -471,6 +469,8 @@ public class MeetupCalendarBot extends AbilityBot {
         return switch (callbackAction) {
             case TOGGLE_NEW_EVENTS_NOTIFICATION, TOGGLE_NEW_EVENTS_NOTIFICATION_FROM_SETTINGS ->
                     Pair.of(user::setSendNotifications, user::getSendNotifications);
+            case TOGGLE_1_WEEK_NOTIFICATION, TOGGLE_1_WEEK_NOTIFICATION_FROM_SETTINGS ->
+                    Pair.of(user::setOneWeekNotification, user::getOneWeekNotification);
             case TOGGLE_1_DAY_NOTIFICATION, TOGGLE_1_DAY_NOTIFICATION_FROM_SETTINGS ->
                     Pair.of(user::setOneDayNotification, user::getOneDayNotification);
             case TOGGLE_12_HOURS_NOTIFICATION, TOGGLE_12_HOURS_NOTIFICATION_FROM_SETTINGS ->
@@ -484,9 +484,10 @@ public class MeetupCalendarBot extends AbilityBot {
 
     private boolean includeNewEventNotificationsFlag(UserNotificationToggle callbackAction) {
         return switch (callbackAction) {
-            case TOGGLE_NEW_EVENTS_NOTIFICATION, TOGGLE_1_DAY_NOTIFICATION, TOGGLE_12_HOURS_NOTIFICATION,
-                    TOGGLE_6_HOURS_NOTIFICATION, TOGGLE_1_HOUR_NOTIFICATION -> false;
-            case TOGGLE_NEW_EVENTS_NOTIFICATION_FROM_SETTINGS, TOGGLE_1_DAY_NOTIFICATION_FROM_SETTINGS, TOGGLE_12_HOURS_NOTIFICATION_FROM_SETTINGS,
+            case TOGGLE_NEW_EVENTS_NOTIFICATION, TOGGLE_1_WEEK_NOTIFICATION, TOGGLE_1_DAY_NOTIFICATION,
+                    TOGGLE_12_HOURS_NOTIFICATION, TOGGLE_6_HOURS_NOTIFICATION, TOGGLE_1_HOUR_NOTIFICATION -> false;
+            case TOGGLE_NEW_EVENTS_NOTIFICATION_FROM_SETTINGS, TOGGLE_1_WEEK_NOTIFICATION_FROM_SETTINGS,
+                    TOGGLE_1_DAY_NOTIFICATION_FROM_SETTINGS, TOGGLE_12_HOURS_NOTIFICATION_FROM_SETTINGS,
                     TOGGLE_6_HOURS_NOTIFICATION_FROM_SETTINGS, TOGGLE_1_HOUR_NOTIFICATION_FROM_SETTINGS -> true;
         };
     }
@@ -498,6 +499,7 @@ public class MeetupCalendarBot extends AbilityBot {
     }
 
     private void scheduleNotifications(Event event) {
+        scheduleNotifications(event, event.getEventTime().minus(1, ChronoUnit.WEEKS), User::getOneDayNotification, "There is an event in 1 week: %s".formatted(event.getName()));
         scheduleNotifications(event, event.getEventTime().minus(1, ChronoUnit.DAYS), User::getOneDayNotification, "There is an event tomorrow: %s".formatted(event.getName()));
         scheduleNotifications(event, event.getEventTime().minus(12, ChronoUnit.HOURS), User::getTwelveHoursNotification, "%s starts in 12 hours".formatted(event.getName()));
         scheduleNotifications(event, event.getEventTime().minus(6, ChronoUnit.HOURS), User::getSixHoursNotification, "%s starts only in 6 hours!!!".formatted(event.getName()));
@@ -506,7 +508,7 @@ public class MeetupCalendarBot extends AbilityBot {
 
     private void scheduleNotifications(Event event, Instant time, Predicate<User> predicate, String notificationText) {
         if (time.isAfter(Instant.now())) {
-            log.info("Scheduling notifications for {}", event.getName());
+            log.info("Scheduling notifications for {} at {}", event.getName(), time);
             Runnable task = () -> getUsersForNotification(event.getEventId(), predicate)
                     .forEach(id -> actionsExecutor.sendMessage(id,
                             """
@@ -522,7 +524,7 @@ public class MeetupCalendarBot extends AbilityBot {
     }
 
     private Set<Long> getUsersForNotification(Long eventId, Predicate<User> isSubscribedToNotification) {
-        return eventSubscriptionsRepository.findAllByEventId(eventId).stream()
+        return eventSubscriptionsRepository.findAllByEventIdAndSubscribed(eventId, true).stream()
                 .map(EventSubscription::getUserId)
                 .map(userId -> usersRepository.findById(userId).orElse(null))
                 .filter(Objects::nonNull)

@@ -47,6 +47,9 @@ public class User implements Serializable {
     Boolean sendNotifications = false;
     @NonNull
     @Builder.Default
+    Boolean oneWeekNotification = false;
+    @NonNull
+    @Builder.Default
     Boolean oneDayNotification = false;
     @NonNull
     @Builder.Default

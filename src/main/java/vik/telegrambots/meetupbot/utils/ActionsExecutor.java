@@ -2,20 +2,24 @@ package vik.telegrambots.meetupbot.utils;
 
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import org.telegram.abilitybots.api.sender.MessageSender;
 import org.telegram.telegrambots.meta.api.methods.GetMe;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
+import org.telegram.telegrambots.meta.api.objects.LinkPreviewOptions;
 import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.User;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboard;
+import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
 import java.util.List;
 
 import static org.telegram.abilitybots.api.util.AbilityUtils.getChatId;
 
+@Slf4j
 @RequiredArgsConstructor
 public class ActionsExecutor {
 
@@ -38,40 +42,44 @@ public class ActionsExecutor {
         chatIds.forEach(chatId -> sendMessage(chatId, messageText, replyKeyboard));
     }
 
-    @SneakyThrows
-    public void sendMessage(Long chatId, String messageText, ReplyKeyboard replyKeyboard) {
-        SendMessage message = SendMessage.builder()
-                .chatId(chatId)
-                .text(messageText)
-                .replyMarkup(replyKeyboard)
-                .build();
-        sender.execute(message);
+    public Message sendMessage(Long chatId, String messageText, ReplyKeyboard replyKeyboard, LinkPreviewOptions linkPreviewOptions) {
+        return sendMessage(chatId, messageText, null, replyKeyboard, linkPreviewOptions);
+    }
+
+    public Message sendMessage(Long chatId, String messageText, ReplyKeyboard replyKeyboard) {
+        return sendMessage(chatId, messageText, replyKeyboard, null);
     }
 
     public void sendMessage(Long chatId, Integer replyToMessageId, String messageText) {
         sendMessage(chatId, replyToMessageId, messageText, KeyboardFactory.emptyKeyboard());
     }
 
-    @SneakyThrows
     public void sendMessage(Long chatId, Integer replyToMessageId, String messageText, ReplyKeyboard replyKeyboard) {
-        SendMessage message = SendMessage.builder()
-                .chatId(chatId)
-                .text(messageText)
-                .replyMarkup(replyKeyboard)
-                .replyToMessageId(replyToMessageId)
-                .build();
-        sender.execute(message);
+        sendMessage(chatId, messageText, replyToMessageId, replyKeyboard, null);
     }
 
     @SneakyThrows
+    public void updateMessageText(Long chatId, Integer messageId, String text, InlineKeyboardMarkup inlineKeyboardMarkup, LinkPreviewOptions linkPreviewOptions) {
+        sender.execute(EditMessageText.builder()
+                .chatId(chatId)
+                .messageId(messageId)
+                .text(text)
+                .replyMarkup(inlineKeyboardMarkup)
+                .linkPreviewOptions(linkPreviewOptions)
+                .build());
+    }
+
+    public void updateMessageText(Long chatId, Integer messageId, String text, InlineKeyboardMarkup inlineKeyboardMarkup) {
+        updateMessageText(chatId, messageId, text, inlineKeyboardMarkup, null);
+    }
+
+    public void updateMessageText(Long chatId, Integer messageId, String text) {
+        updateMessageText(chatId, messageId, text, null);
+    }
+
     public void updateMessageText(Update upd, String text) {
         var message = (Message) upd.getCallbackQuery().getMessage();
-        sender.execute(EditMessageText.builder()
-                .chatId(getChatId(upd))
-                .messageId(message.getMessageId())
-                .text(text)
-                .replyMarkup(null)
-                .build());
+        updateMessageText(getChatId(upd), message.getMessageId(), text);
     }
 
     @SneakyThrows
@@ -94,5 +102,21 @@ public class ActionsExecutor {
                 .text(message.getText())
                 .replyMarkup(inlineKeyboardMarkup)
                 .build());
+    }
+
+    public Message sendMessage(Long chatId, String messageText, Integer replyToMessageId, ReplyKeyboard replyKeyboard, LinkPreviewOptions linkPreviewOptions) {
+        SendMessage message = SendMessage.builder()
+                .chatId(chatId)
+                .text(messageText)
+                .replyToMessageId(replyToMessageId)
+                .replyMarkup(replyKeyboard)
+                .linkPreviewOptions(linkPreviewOptions)
+                .build();
+        try {
+            return sender.execute(message);
+        } catch (TelegramApiException e) {
+            log.error("Can't send message to chat {}, text: {}", chatId, messageText, e);
+            return null;
+        }
     }
 }
