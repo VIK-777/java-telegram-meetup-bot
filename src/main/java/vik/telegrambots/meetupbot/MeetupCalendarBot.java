@@ -265,20 +265,26 @@ public class MeetupCalendarBot extends AbilityBot {
                 .privacy(PUBLIC)
                 .action(ctx -> {
                     var chatId = ctx.chatId();
-                    var pairs = getUpcomingEventsPairs();
-                    if (pairs.isEmpty()) {
+                    var messageAndButtons = getMessageAndButtonsForUpcomingEvents();
+                    if (messageAndButtons.b().isEmpty()) {
                         actionsExecutor.sendMessage(chatId, NO_UPCOMING_EVENTS);
                         return;
                     }
-                    actionsExecutor.sendMessage(chatId, "All upcoming events:", getInlineGridForPairs(pairs, 1));
+                    actionsExecutor.sendMessage(chatId, messageAndButtons.a(), getInlineGridForPairs(messageAndButtons.b(), 1));
                 })
                 .build();
     }
 
-    private List<Pair<String, String>> getUpcomingEventsPairs() {
-        return eventsRepository.findUpcomingEvents().stream()
-                .map(event -> Pair.of(Utils.writeDateTime(event.getEventTime()) + ": " + event.getName(),
-                        OPEN_EVENT_INFORMATION + " " + event.getEventId())).toList();
+    private Pair<String, List<Pair<String, String>>> getMessageAndButtonsForUpcomingEvents() {
+        var sb = new StringBuilder("All upcoming events:");
+        var buttons = eventsRepository.findUpcomingEvents().stream()
+                .map(event -> {
+                    var text = Utils.writeDateTime(event.getEventTime()) + ": " + event.getName();
+                    sb.append("\n").append("• ").append(text);
+                    return Pair.of(text, OPEN_EVENT_INFORMATION + " " + event.getEventId());
+                }).toList();
+        sb.append("\n\nYou can click on any button below to get more information and subscribe/unsubscribe to notifications");
+        return Pair.of(sb.toString(), buttons);
     }
 
     public Ability settings() {
@@ -429,12 +435,12 @@ public class MeetupCalendarBot extends AbilityBot {
                     });
                 }
                 case OPEN_UPCOMING_EVENTS -> {
-                    var pairs = getUpcomingEventsPairs();
-                    if (pairs.isEmpty()) {
+                    var messageAndButtons = getMessageAndButtonsForUpcomingEvents();
+                    if (messageAndButtons.b().isEmpty()) {
                         actionsExecutor.updateMessageText(upd, NO_UPCOMING_EVENTS);
                         return;
                     }
-                    actionsExecutor.updateMessageText(upd, "All upcoming events:", getInlineGridForPairs(pairs, 1));
+                    actionsExecutor.updateMessageText(upd, messageAndButtons.a(), getInlineGridForPairs(messageAndButtons.b(), 1));
                 }
                 default -> {
                     if (callbackQueryAction.startsWith("TOGGLE")) {
