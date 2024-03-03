@@ -1,0 +1,13 @@
+server.port: 8090
+spring:
+  threads.virtual.enabled: true
+  datasource:
+    url: jdbc:h2:mem:mydb
+    username: sa
+    password: password
+    driverClassName: org.h2.Driver
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate.ddl-auto: update
+    properties.hibernate.jdbc.batch_size: 5
+  h2.console.enabled: true
