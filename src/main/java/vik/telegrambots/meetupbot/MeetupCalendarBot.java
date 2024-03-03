@@ -499,7 +499,7 @@ public class MeetupCalendarBot extends AbilityBot {
     }
 
     private void scheduleNotifications(Event event) {
-        scheduleNotifications(event, event.getEventTime().minus(1, ChronoUnit.WEEKS), User::getOneDayNotification, "There is an event in 1 week: %s".formatted(event.getName()));
+        scheduleNotifications(event, event.getEventTime().minus(7, ChronoUnit.DAYS), User::getOneDayNotification, "There is an event in 1 week: %s".formatted(event.getName()));
         scheduleNotifications(event, event.getEventTime().minus(1, ChronoUnit.DAYS), User::getOneDayNotification, "There is an event tomorrow: %s".formatted(event.getName()));
         scheduleNotifications(event, event.getEventTime().minus(12, ChronoUnit.HOURS), User::getTwelveHoursNotification, "%s starts in 12 hours".formatted(event.getName()));
         scheduleNotifications(event, event.getEventTime().minus(6, ChronoUnit.HOURS), User::getSixHoursNotification, "%s starts only in 6 hours!!!".formatted(event.getName()));
