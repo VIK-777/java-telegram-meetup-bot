@@ -66,6 +66,7 @@ import static vik.telegrambots.meetupbot.utils.Constants.IM_DONE_BUTTON;
 import static vik.telegrambots.meetupbot.utils.Constants.IM_DONE_BUTTON_FROM_SETTINGS;
 import static vik.telegrambots.meetupbot.utils.Constants.NAH_I_DONT_LIKE_SPAM;
 import static vik.telegrambots.meetupbot.utils.Constants.NEW_EVENT_MESSAGE;
+import static vik.telegrambots.meetupbot.utils.Constants.NO_UPCOMING_EVENTS;
 import static vik.telegrambots.meetupbot.utils.Constants.OPEN_EVENT_INFORMATION;
 import static vik.telegrambots.meetupbot.utils.Constants.OPEN_UPCOMING_EVENTS;
 import static vik.telegrambots.meetupbot.utils.Constants.RETURN_BACK_BUTTON;
@@ -261,7 +262,7 @@ public class MeetupCalendarBot extends AbilityBot {
                     var chatId = ctx.chatId();
                     var pairs = getUpcomingEventsPairs();
                     if (pairs.isEmpty()) {
-                        actionsExecutor.sendMessage(chatId, "There is no upcoming events");
+                        actionsExecutor.sendMessage(chatId, NO_UPCOMING_EVENTS);
                         return;
                     }
                     actionsExecutor.sendMessage(chatId, "All upcoming events:", getInlineGridForPairs(pairs, 1));
@@ -422,7 +423,7 @@ public class MeetupCalendarBot extends AbilityBot {
                 case OPEN_UPCOMING_EVENTS -> {
                     var pairs = getUpcomingEventsPairs();
                     if (pairs.isEmpty()) {
-                        actionsExecutor.updateMessageText(upd, "There is no upcoming events");
+                        actionsExecutor.updateMessageText(upd, NO_UPCOMING_EVENTS);
                         return;
                     }
                     actionsExecutor.updateMessageText(upd, "All upcoming events:", getInlineGridForPairs(pairs, 1));

@@ -19,6 +19,7 @@ public class Constants {
 
     public static final String BOT_FULL_INFO_MESSAGE = BOT_INFO_MESSAGE + "\n" + BOT_COMMANDS_MESSAGE;
     public static final String YES_OF_COURSE = "Yes, of course";
+    public static final String NO_UPCOMING_EVENTS = "There are no upcoming events";
     public static final String ENABLE_NEW_EVENT_NOTIFICATIONS = "ENABLE_NEW_EVENT_NOTIFICATIONS";
     public static final String DISABLE_NEW_EVENT_NOTIFICATIONS = "DISABLE_NEW_EVENT_NOTIFICATIONS";
     public static final String NAH_I_DONT_LIKE_SPAM = "Nah, I don't like spam";
@@ -43,7 +44,7 @@ public class Constants {
     public static String DESCRIPTION_STARTS_WITH = "Description: ";
     public static String LINK_STARTS_WITH = "Link: ";
     public static final String EVENT_TEMPLATE_SIMPLE =
-            NAME_STARTS_WITH + " %s\n"
+            NAME_STARTS_WITH + "%s\n"
                     + TIME_STARTS_WITH + "%s\n"
                     + DESCRIPTION_STARTS_WITH + "%s\n"
                     + LINK_STARTS_WITH + "%s";
