@@ -485,7 +485,7 @@ public class MeetupCalendarBot extends AbilityBot {
     }
 
     private Set<Long> getAllSubscribedUsers() {
-        return usersRepository.findAllBySendNotificationsTrue().stream().map(User::getUserId).collect(Collectors.toSet());
+        return usersRepository.findAllBySendNotifications(true).stream().map(User::getUserId).collect(Collectors.toSet());
     }
 
     private void scheduleNotifications(Event event) {
