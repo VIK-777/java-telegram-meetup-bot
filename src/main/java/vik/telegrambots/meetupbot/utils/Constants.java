@@ -50,7 +50,7 @@ public class Constants {
                     + LINK_STARTS_WITH + "%s";
     public static String NEW_EVENT_MESSAGE = "Please send event in following format:\n" + EVENT_TEMPLATE_SIMPLE.formatted("", "yyyy-MM-dd HH:MM", "", "");
     public static final String EVENT_TEMPLATE =
-            EVENT_NAME_EMOJI + NAME_STARTS_WITH + " %s\n"
+            EVENT_NAME_EMOJI + NAME_STARTS_WITH + "%s\n"
                     + TIME_EMOJI + TIME_STARTS_WITH + "%s\n"
                     + DESCRIPTION_EMOJI + DESCRIPTION_STARTS_WITH + "%s\n"
                     + LINK_EMOJI + LINK_STARTS_WITH + "%s";
