@@ -245,6 +245,10 @@ public class MeetupCalendarBot extends AbilityBot {
                 .privacy(PUBLIC)
                 .action(ctx -> {
                     var chatId = ctx.chatId();
+                    if (creatorId() == chatId) {
+                        newEvent(ctx);
+                        return;
+                    }
                     if (ctx.arguments().length == 0) {
                         actionsExecutor.sendMessage(chatId, "Please invoke command as /suggest <your text>");
                         return;
