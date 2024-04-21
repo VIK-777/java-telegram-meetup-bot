@@ -39,6 +39,9 @@ public class Constants {
     public static final String LINK_EMOJI = "\uD83C\uDF0D ";
     public static final String CHECK_MARK_EMOJI = "✅ ";
     public static final String CROSS_MARK_EMOJI = "❌ ";
+    public static final String GREEN_DOT_EMOJI = "🟢 ";
+    public static final String RED_DOT_EMOJI = "🔴 ";
+    public static final String BLUE_DOT_EMOJI = "🔵 ";
     public static String NAME_STARTS_WITH = "Name: ";
     public static String TIME_STARTS_WITH = "Time: ";
     public static String DESCRIPTION_STARTS_WITH = "Description: ";

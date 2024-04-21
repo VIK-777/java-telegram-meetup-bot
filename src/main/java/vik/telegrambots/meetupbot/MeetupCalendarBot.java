@@ -57,6 +57,7 @@ import static org.telegram.abilitybots.api.util.AbilityUtils.addTag;
 import static org.telegram.abilitybots.api.util.AbilityUtils.fullName;
 import static org.telegram.abilitybots.api.util.AbilityUtils.getChatId;
 import static org.telegram.abilitybots.api.util.AbilityUtils.getUser;
+import static vik.telegrambots.meetupbot.utils.Constants.BLUE_DOT_EMOJI;
 import static vik.telegrambots.meetupbot.utils.Constants.BOT_COMMANDS_MESSAGE;
 import static vik.telegrambots.meetupbot.utils.Constants.BOT_FULL_INFO_MESSAGE;
 import static vik.telegrambots.meetupbot.utils.Constants.BOT_INFO_MESSAGE;
@@ -64,6 +65,7 @@ import static vik.telegrambots.meetupbot.utils.Constants.CHECK_MARK_EMOJI;
 import static vik.telegrambots.meetupbot.utils.Constants.CROSS_MARK_EMOJI;
 import static vik.telegrambots.meetupbot.utils.Constants.DISABLE_NEW_EVENT_NOTIFICATIONS;
 import static vik.telegrambots.meetupbot.utils.Constants.ENABLE_NEW_EVENT_NOTIFICATIONS;
+import static vik.telegrambots.meetupbot.utils.Constants.GREEN_DOT_EMOJI;
 import static vik.telegrambots.meetupbot.utils.Constants.IM_DONE_BUTTON;
 import static vik.telegrambots.meetupbot.utils.Constants.IM_DONE_BUTTON_FROM_SETTINGS;
 import static vik.telegrambots.meetupbot.utils.Constants.NAH_I_DONT_LIKE_SPAM;
@@ -269,7 +271,7 @@ public class MeetupCalendarBot extends AbilityBot {
                 .privacy(PUBLIC)
                 .action(ctx -> {
                     var chatId = ctx.chatId();
-                    var messageAndButtons = getMessageAndButtonsForUpcomingEvents();
+                    var messageAndButtons = getMessageAndButtonsForUpcomingEvents(chatId);
                     if (messageAndButtons.b().isEmpty()) {
                         actionsExecutor.sendMessage(chatId, NO_UPCOMING_EVENTS);
                         return;
@@ -279,15 +281,19 @@ public class MeetupCalendarBot extends AbilityBot {
                 .build();
     }
 
-    private Pair<String, List<Pair<String, String>>> getMessageAndButtonsForUpcomingEvents() {
+    private Pair<String, List<Pair<String, String>>> getMessageAndButtonsForUpcomingEvents(long userId) {
         var sb = new StringBuilder("All upcoming events:");
+        var userSubscriptions = eventSubscriptionsRepository.findAllByUserIdAsMap(userId);
         var buttons = eventsRepository.findUpcomingEvents().stream()
                 .map(event -> {
+                    var isSubscribed = userSubscriptions.getOrDefault(event.getEventId(), false);
                     var text = Utils.writeDateTime(event.getEventTime()) + ": " + event.getName();
                     sb.append("\n").append("• ").append(text);
-                    return Pair.of(text, OPEN_EVENT_INFORMATION + " " + event.getEventId());
+                    return Pair.of((isSubscribed ? GREEN_DOT_EMOJI : BLUE_DOT_EMOJI) + text, OPEN_EVENT_INFORMATION + " " + event.getEventId());
                 }).toList();
         sb.append("\n\nYou can click on any button below to get more information and subscribe/unsubscribe to notifications");
+        sb.append("\n" + GREEN_DOT_EMOJI + "- subscribed");
+        sb.append("\n" + BLUE_DOT_EMOJI + "- not subscribed");
         return Pair.of(sb.toString(), buttons);
     }
 
@@ -439,7 +445,7 @@ public class MeetupCalendarBot extends AbilityBot {
                     });
                 }
                 case OPEN_UPCOMING_EVENTS -> {
-                    var messageAndButtons = getMessageAndButtonsForUpcomingEvents();
+                    var messageAndButtons = getMessageAndButtonsForUpcomingEvents(chatId);
                     if (messageAndButtons.b().isEmpty()) {
                         actionsExecutor.updateMessageText(upd, NO_UPCOMING_EVENTS);
                         return;
