@@ -1,6 +1,6 @@
 plugins {
 	java
-	id("org.springframework.boot") version "3.2.3"
+	id("org.springframework.boot") version "3.2.5"
 	id("io.spring.dependency-management") version "1.1.4"
 	id("com.google.cloud.tools.jib") version "3.4.1"
 }
@@ -36,7 +36,9 @@ dependencies {
 	implementation("org.telegram:telegrambots-abilities:6.9.7.1")
 	implementation("org.apache.commons:commons-collections4:4.4")
 	implementation("javax.xml.bind:jaxb-api:2.4.0-b180830.0359")
+	implementation("com.github.ulisesbocchio:jasypt-spring-boot-starter:3.0.5")
 	implementation("org.postgresql:postgresql")
+	implementation("com.github.gavlyukovskiy:datasource-proxy-spring-boot-starter:1.9.1")
 }
 
 tasks.withType<Test> {

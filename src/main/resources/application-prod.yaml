@@ -1,0 +1,6 @@
+server.port: 8090
+
+bot:
+  creator-id: ENC(ZVejZflBBqjjkeqYoyO1S6ovUIF/DQAou9HMYPJV9YNs3QMmbnotMPX1nra9/Hq3)
+  name: meetupCalendarBot
+  token: ENC(l10qyBwqiTfiAuGjacfYdDkl9zdEiBrkReTsyDx6ao3F8ju23+YXOUoR3SDonAvJLk9FwSFTnOETVZ/fg+FJZuIhedDiRgFANGzI0L88I/g=)

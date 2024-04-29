@@ -1,0 +1,5 @@
+spring:
+  datasource:
+    url: jdbc:h2:file:/home/ubuntu/meetup_calendar_bot/meetup_bot_db;INIT=RUNSCRIPT FROM '/home/ubuntu/meetup_calendar_bot/h2init.sql'
+    username: ENC(bfo/igyj2S0C8Bh4FApZDWc4JMz1T5MkRnlWAccq+62x0/zaREaLofPlrq6M0DZ6)
+    password: ENC(6iniYaMusMsz6maJfoYJq8lQnB2KlWcRSkuh07BhqNy8MwaBpMrp52+7lvL0jvdo)

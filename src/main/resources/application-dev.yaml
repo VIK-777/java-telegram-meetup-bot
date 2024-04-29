@@ -1,0 +1,8 @@
+server.port: 8091
+
+bot:
+  creator-id: ENC(ZVejZflBBqjjkeqYoyO1S6ovUIF/DQAou9HMYPJV9YNs3QMmbnotMPX1nra9/Hq3)
+  name: meetupCalendarBotDev
+  token: ENC(Vq0yqzKUSTxJfZ6D/dmCDV1p+GgmNJxNqjRg0qJWm436PUehBdCVaLuj+z+zTcINn0XOvvNCxAwNK3QgDrt54ThpLgqKiCnMLO8dhnCokzU=)
+
+logging.level.net.ttddyy.dsproxy.listener: debug
