@@ -1,6 +1,7 @@
 package vik.telegrambots.meetupbot;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;
 import lombok.SneakyThrows;
@@ -22,6 +23,7 @@ import org.telegram.abilitybots.api.toggle.CustomToggle;
 import org.telegram.abilitybots.api.util.AbilityUtils;
 import org.telegram.abilitybots.api.util.Pair;
 import org.telegram.telegrambots.bots.DefaultBotOptions;
+import org.telegram.telegrambots.meta.api.objects.InputFile;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import vik.telegrambots.meetupbot.dao.jparepository.EventSubscriptionsJpaRepository;
 import vik.telegrambots.meetupbot.dao.jparepository.EventsJpaRepository;
@@ -36,7 +38,12 @@ import vik.telegrambots.meetupbot.utils.UserNotificationToggle;
 import vik.telegrambots.meetupbot.utils.UserState;
 import vik.telegrambots.meetupbot.utils.Utils;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.PrintStream;
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
@@ -280,6 +287,76 @@ public class MeetupCalendarBot extends AbilityBot {
                 .build();
     }
 
+    public Ability dump() {
+        return Ability
+                .builder()
+                .name("dump")
+                .info("Dump all data")
+                .locality(USER)
+                .privacy(CREATOR)
+                .action(ctx -> {
+                    var chatId = ctx.chatId();
+                    var objectMapper = new ObjectMapper().findAndRegisterModules();
+                    var folder = new File(ctx.firstArg(), DateTimeFormatter.ofPattern("yyyy-MM-dd-HH-mm").format(LocalDateTime.now()));
+                    folder.mkdir();
+                    actionsExecutor.sendMessage(chatId, "Dumping data to %s".formatted(folder.getAbsolutePath()));
+                    Map<String, Supplier<List<?>>> map = Map.of(
+                            "users", () -> usersRepository.findAll(),
+                            "events", () -> eventsRepository.findAll(),
+                            "eventSubscriptions", () -> eventSubscriptionsRepository.findAll(),
+                            "updates", () -> updatesRepository.findAll()
+                    );
+                    map.forEach((name, supplier) -> {
+                        var file = new File(folder, name + ".json");
+                        try (PrintStream printStream = new PrintStream(file)) {
+                            objectMapper.writeValue(printStream, supplier.get());
+                            actionsExecutor.sendDocument(chatId, new InputFile(file));
+                        } catch (IOException e) {
+                            log.error("Exception caught", e);
+                            actionsExecutor.sendMessage(chatId, "Error dumping data: %s".formatted(name));
+                        }
+                    });
+                })
+                .build();
+    }
+
+    public Ability load() {
+        return Ability
+                .builder()
+                .name("load")
+                .info("Load dumped data")
+                .locality(USER)
+                .privacy(CREATOR)
+                .action(ctx -> {
+                    var chatId = ctx.chatId();
+                    var objectMapper = new ObjectMapper().findAndRegisterModules();
+                    var folder = new File(ctx.firstArg());
+                    try {
+                        usersRepository.deleteAll();
+                        var users = objectMapper.readValue(new File(folder, "users.json"), new TypeReference<List<User>>(){});
+                        usersRepository.saveAll(users);
+                        log.info("Users loaded");
+                        eventsRepository.deleteAll();
+                        var events = objectMapper.readValue(new File(folder, "events.json"), new TypeReference<List<Event>>(){});
+                        eventsRepository.saveAll(events);
+                        log.info("Events loaded");
+                        eventSubscriptionsRepository.deleteAll();
+                        var eventSubscriptions = objectMapper.readValue(new File(folder, "eventSubscriptions.json"), new TypeReference<List<EventSubscription>>(){});
+                        eventSubscriptionsRepository.saveAll(eventSubscriptions);
+                        log.info("Event subscriptions loaded");
+                        updatesRepository.deleteAll();
+                        var updates = objectMapper.readValue(new File(folder, "updates.json"), new TypeReference<List<vik.telegrambots.meetupbot.dao.model.Update>>(){});
+                        updatesRepository.saveAll(updates);
+                        log.info("Updates loaded");
+                        actionsExecutor.sendMessage(chatId, "Data loaded");
+                    } catch (IOException e) {
+                        log.error("Exception caught", e);
+                        actionsExecutor.sendMessage(chatId, "Error loading data: %s".formatted(e.getMessage()));
+                    }
+                })
+                .build();
+    }
+
     public Ability upcomingEvents() {
         return Ability
                 .builder()
@@ -519,10 +596,10 @@ public class MeetupCalendarBot extends AbilityBot {
     private boolean includeNewEventNotificationsFlag(UserNotificationToggle callbackAction) {
         return switch (callbackAction) {
             case TOGGLE_NEW_EVENTS_NOTIFICATION, TOGGLE_1_WEEK_NOTIFICATION, TOGGLE_1_DAY_NOTIFICATION,
-                    TOGGLE_12_HOURS_NOTIFICATION, TOGGLE_6_HOURS_NOTIFICATION, TOGGLE_1_HOUR_NOTIFICATION -> false;
+                 TOGGLE_12_HOURS_NOTIFICATION, TOGGLE_6_HOURS_NOTIFICATION, TOGGLE_1_HOUR_NOTIFICATION -> false;
             case TOGGLE_NEW_EVENTS_NOTIFICATION_FROM_SETTINGS, TOGGLE_1_WEEK_NOTIFICATION_FROM_SETTINGS,
-                    TOGGLE_1_DAY_NOTIFICATION_FROM_SETTINGS, TOGGLE_12_HOURS_NOTIFICATION_FROM_SETTINGS,
-                    TOGGLE_6_HOURS_NOTIFICATION_FROM_SETTINGS, TOGGLE_1_HOUR_NOTIFICATION_FROM_SETTINGS -> true;
+                 TOGGLE_1_DAY_NOTIFICATION_FROM_SETTINGS, TOGGLE_12_HOURS_NOTIFICATION_FROM_SETTINGS,
+                 TOGGLE_6_HOURS_NOTIFICATION_FROM_SETTINGS, TOGGLE_1_HOUR_NOTIFICATION_FROM_SETTINGS -> true;
         };
     }
 

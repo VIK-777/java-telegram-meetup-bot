@@ -5,8 +5,10 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.telegram.abilitybots.api.sender.MessageSender;
 import org.telegram.telegrambots.meta.api.methods.GetMe;
+import org.telegram.telegrambots.meta.api.methods.send.SendDocument;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
+import org.telegram.telegrambots.meta.api.objects.InputFile;
 import org.telegram.telegrambots.meta.api.objects.LinkPreviewOptions;
 import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
@@ -18,6 +20,7 @@ import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import java.util.List;
 
 import static org.telegram.abilitybots.api.util.AbilityUtils.getChatId;
+import static vik.telegrambots.meetupbot.utils.KeyboardFactory.emptyKeyboard;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -31,7 +34,7 @@ public class ActionsExecutor {
     }
 
     public void sendMessage(Long chatId, String messageText) {
-        sendMessage(chatId, messageText, KeyboardFactory.emptyKeyboard());
+        sendMessage(chatId, messageText, emptyKeyboard());
     }
 
     public void sendMessage(List<Long> chatIds, String messageText) {
@@ -51,7 +54,7 @@ public class ActionsExecutor {
     }
 
     public void sendMessage(Long chatId, Integer replyToMessageId, String messageText) {
-        sendMessage(chatId, replyToMessageId, messageText, KeyboardFactory.emptyKeyboard());
+        sendMessage(chatId, replyToMessageId, messageText, emptyKeyboard());
     }
 
     public void sendMessage(Long chatId, Integer replyToMessageId, String messageText, ReplyKeyboard replyKeyboard) {
@@ -117,6 +120,19 @@ public class ActionsExecutor {
         } catch (TelegramApiException e) {
             log.error("Can't send message to chat {}, text: {}", chatId, messageText, e);
             return null;
+        }
+    }
+
+    public void sendDocument(Long chatId, InputFile inputFile) {
+        var sendDocument = SendDocument.builder()
+                .document(inputFile)
+                .chatId(chatId)
+                .replyMarkup(emptyKeyboard())
+                .build();
+        try {
+            sender.sendDocument(sendDocument);
+        } catch (TelegramApiException e) {
+            log.error("Can't send file {} to chat {}", inputFile.getMediaName(), chatId, e);
         }
     }
 }
