@@ -52,6 +52,7 @@ import java.util.stream.Stream;
 
 import static org.telegram.abilitybots.api.objects.Locality.USER;
 import static org.telegram.abilitybots.api.objects.Privacy.ADMIN;
+import static org.telegram.abilitybots.api.objects.Privacy.CREATOR;
 import static org.telegram.abilitybots.api.objects.Privacy.PUBLIC;
 import static org.telegram.abilitybots.api.util.AbilityUtils.addTag;
 import static org.telegram.abilitybots.api.util.AbilityUtils.fullName;
@@ -256,8 +257,25 @@ public class MeetupCalendarBot extends AbilityBot {
                         return;
                     }
                     var name = ctx.user().getUserName() != null ? addTag(ctx.user().getUserName()) : fullName(ctx.user());
-                    actionsExecutor.sendMessage(creatorId, "New suggestion:\n" + name + ": " + String.join(" ", ctx.arguments()));
+                    actionsExecutor.sendMessage(creatorId, "New suggestion:\n%s: %s".formatted(name, String.join(" ", ctx.arguments())));
                     actionsExecutor.sendMessage(chatId, "Thank you! Your message was sent to the owner");
+                })
+                .build();
+    }
+
+    public Ability usersList() {
+        return Ability
+                .builder()
+                .name("users")
+                .info("Get all users")
+                .locality(USER)
+                .privacy(CREATOR)
+                .action(ctx -> {
+                    var chatId = ctx.chatId();
+                    var message = usersRepository.findAll().stream()
+                            .map(user -> "%d: %s, %s".formatted(user.getUserId(), fullName(user.toTelegramUser()), user.getUserName()))
+                            .collect(Collectors.joining("\n"));
+                    actionsExecutor.sendMessage(chatId, message);
                 })
                 .build();
     }
