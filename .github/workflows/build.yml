@@ -43,3 +43,4 @@ jobs:
         key: ${{ secrets.SSH_KEY }}
         source: "build/libs/meetupbot-0.0.1-SNAPSHOT.jar"
         target: /home/ubuntu/meetup_calendar_bot/jars
+        strip_components: 2
