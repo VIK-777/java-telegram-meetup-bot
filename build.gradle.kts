@@ -2,7 +2,6 @@ plugins {
 	java
 	id("org.springframework.boot") version "3.2.5"
 	id("io.spring.dependency-management") version "1.1.4"
-	id("com.google.cloud.tools.jib") version "3.4.1"
 }
 
 group = "vik.telegrambots"

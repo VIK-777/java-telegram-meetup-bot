@@ -34,7 +34,7 @@ jobs:
       with:
         validate-wrappers: true
     - name: Build with Gradle
-      run: ./gradlew clean build
+      run: ./gradlew clean build --scan
     - name: Copy bootJar to the server
       uses: appleboy/scp-action@v0.1.7
       with:
