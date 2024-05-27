@@ -404,6 +404,38 @@ public class MeetupCalendarBot extends AbilityBot {
                 .build();
     }
 
+    public Ability eventsAdmin() {
+        return Ability
+                .builder()
+                .name("upcoming_events_admin")
+                .info("upcoming_events_admin")
+                .locality(USER)
+                .privacy(CREATOR)
+                .action(ctx -> {
+                    var chatId = ctx.chatId();
+                    var message = eventsRepository.findUpcomingEvents().stream()
+                            .map(event -> "%s: %s".formatted(event.getEventId(), event.getName()))
+                            .collect(Collectors.joining("\n"));
+                    actionsExecutor.sendMessage(chatId, message);
+                })
+                .build();
+    }
+
+    public Ability deleteEvent() {
+        return Ability
+                .builder()
+                .name("delete_event")
+                .info("delete_event")
+                .locality(USER)
+                .privacy(CREATOR)
+                .action(ctx -> {
+                    var chatId = ctx.chatId();
+                    eventsRepository.deleteById(Long.valueOf(ctx.firstArg()));
+                    actionsExecutor.sendMessage(chatId, "Event %s was deleted".formatted(ctx.firstArg()));
+                })
+                .build();
+    }
+
     @SneakyThrows
     public void newEvent(MessageContext ctx) {
         var chatId = ctx.chatId();
