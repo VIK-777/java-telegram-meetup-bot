@@ -34,7 +34,19 @@ public class ActionsExecutor {
     }
 
     public void sendMessage(Long chatId, String messageText) {
-        sendMessage(chatId, messageText, emptyKeyboard());
+        sendMessage(chatId, messageText, null, emptyKeyboard(), null, ParseMode.NULL);
+    }
+
+    public void sendMessage(Long chatId, String messageText, ParseMode parseMode) {
+        sendMessage(chatId, messageText, null, emptyKeyboard(), null, parseMode);
+    }
+
+    public Message sendMessage(Long chatId, String messageText, ReplyKeyboard replyKeyboard) {
+        return sendMessage(chatId, messageText, null, replyKeyboard, null, ParseMode.NULL);
+    }
+
+    public Message sendMessage(Long chatId, String messageText, ReplyKeyboard replyKeyboard, ParseMode parseMode) {
+        return sendMessage(chatId, messageText, null, replyKeyboard, null, parseMode);
     }
 
     public void sendMessage(List<Long> chatIds, String messageText) {
@@ -45,75 +57,46 @@ public class ActionsExecutor {
         chatIds.forEach(chatId -> sendMessage(chatId, messageText, replyKeyboard));
     }
 
-    public Message sendMessage(Long chatId, String messageText, ReplyKeyboard replyKeyboard, LinkPreviewOptions linkPreviewOptions) {
-        return sendMessage(chatId, messageText, null, replyKeyboard, linkPreviewOptions);
+    public void updateMessageText(Update upd, String text) {
+        var message = (Message) upd.getCallbackQuery().getMessage();
+        updateMessageText(getChatId(upd), message.getMessageId(), text, null, null, ParseMode.NULL);
     }
 
-    public Message sendMessage(Long chatId, String messageText, ReplyKeyboard replyKeyboard) {
-        return sendMessage(chatId, messageText, replyKeyboard, null);
+    public void updateMessageText(Update upd, String text, InlineKeyboardMarkup inlineKeyboardMarkup) {
+        var message = (Message) upd.getCallbackQuery().getMessage();
+        updateMessageText(getChatId(upd), message.getMessageId(), text, inlineKeyboardMarkup, null, ParseMode.NULL);
     }
 
-    public void sendMessage(Long chatId, Integer replyToMessageId, String messageText) {
-        sendMessage(chatId, replyToMessageId, messageText, emptyKeyboard());
+    public void updateMessageText(Update upd, String text, InlineKeyboardMarkup inlineKeyboardMarkup, ParseMode parseMode) {
+        var message = (Message) upd.getCallbackQuery().getMessage();
+        updateMessageText(getChatId(upd), message.getMessageId(), text, inlineKeyboardMarkup, null, parseMode);
     }
 
-    public void sendMessage(Long chatId, Integer replyToMessageId, String messageText, ReplyKeyboard replyKeyboard) {
-        sendMessage(chatId, messageText, replyToMessageId, replyKeyboard, null);
+    public void updateMessageText(Update upd, InlineKeyboardMarkup inlineKeyboardMarkup) {
+        var message = (Message) upd.getCallbackQuery().getMessage();
+        updateMessageText(getChatId(upd), message.getMessageId(), message.getText(), inlineKeyboardMarkup, null, ParseMode.NULL);
     }
 
     @SneakyThrows
-    public void updateMessageText(Long chatId, Integer messageId, String text, InlineKeyboardMarkup inlineKeyboardMarkup, LinkPreviewOptions linkPreviewOptions) {
+    public void updateMessageText(Long chatId, Integer messageId, String text, InlineKeyboardMarkup inlineKeyboardMarkup, LinkPreviewOptions linkPreviewOptions, ParseMode parseMode) {
         sender.execute(EditMessageText.builder()
                 .chatId(chatId)
                 .messageId(messageId)
                 .text(text)
                 .replyMarkup(inlineKeyboardMarkup)
                 .linkPreviewOptions(linkPreviewOptions)
+                .parseMode(parseMode.getAsString())
                 .build());
     }
 
-    public void updateMessageText(Long chatId, Integer messageId, String text, InlineKeyboardMarkup inlineKeyboardMarkup) {
-        updateMessageText(chatId, messageId, text, inlineKeyboardMarkup, null);
-    }
-
-    public void updateMessageText(Long chatId, Integer messageId, String text) {
-        updateMessageText(chatId, messageId, text, null);
-    }
-
-    public void updateMessageText(Update upd, String text) {
-        var message = (Message) upd.getCallbackQuery().getMessage();
-        updateMessageText(getChatId(upd), message.getMessageId(), text);
-    }
-
-    @SneakyThrows
-    public void updateMessageText(Update upd, String text, InlineKeyboardMarkup inlineKeyboardMarkup) {
-        var message = (Message) upd.getCallbackQuery().getMessage();
-        sender.execute(EditMessageText.builder()
-                .chatId(getChatId(upd))
-                .messageId(message.getMessageId())
-                .text(text)
-                .replyMarkup(inlineKeyboardMarkup)
-                .build());
-    }
-
-    @SneakyThrows
-    public void updateMessageText(Update upd, InlineKeyboardMarkup inlineKeyboardMarkup) {
-        var message = (Message) upd.getCallbackQuery().getMessage();
-        sender.execute(EditMessageText.builder()
-                .chatId(getChatId(upd))
-                .messageId(message.getMessageId())
-                .text(message.getText())
-                .replyMarkup(inlineKeyboardMarkup)
-                .build());
-    }
-
-    public Message sendMessage(Long chatId, String messageText, Integer replyToMessageId, ReplyKeyboard replyKeyboard, LinkPreviewOptions linkPreviewOptions) {
+    public Message sendMessage(Long chatId, String messageText, Integer replyToMessageId, ReplyKeyboard replyKeyboard, LinkPreviewOptions linkPreviewOptions, ParseMode parseMode) {
         SendMessage message = SendMessage.builder()
                 .chatId(chatId)
                 .text(messageText)
                 .replyToMessageId(replyToMessageId)
                 .replyMarkup(replyKeyboard)
                 .linkPreviewOptions(linkPreviewOptions)
+                .parseMode(parseMode.getAsString())
                 .build();
         try {
             return sender.execute(message);
@@ -133,6 +116,16 @@ public class ActionsExecutor {
             sender.sendDocument(sendDocument);
         } catch (TelegramApiException e) {
             log.error("Can't send file {} to chat {}", inputFile.getMediaName(), chatId, e);
+        }
+    }
+
+    public enum ParseMode {
+        MARKDOWN,
+        HTML,
+        NULL;
+
+        private String getAsString() {
+            return this == ParseMode.NULL ? null : this.name().toLowerCase();
         }
     }
 }

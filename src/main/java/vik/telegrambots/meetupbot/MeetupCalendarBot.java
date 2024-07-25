@@ -333,19 +333,23 @@ public class MeetupCalendarBot extends AbilityBot {
                     var folder = new File(ctx.firstArg());
                     try {
                         usersRepository.deleteAll();
-                        var users = objectMapper.readValue(new File(folder, "users.json"), new TypeReference<List<User>>(){});
+                        var users = objectMapper.readValue(new File(folder, "users.json"), new TypeReference<List<User>>() {
+                        });
                         usersRepository.saveAll(users);
                         log.info("Users loaded");
                         eventsRepository.deleteAll();
-                        var events = objectMapper.readValue(new File(folder, "events.json"), new TypeReference<List<Event>>(){});
+                        var events = objectMapper.readValue(new File(folder, "events.json"), new TypeReference<List<Event>>() {
+                        });
                         eventsRepository.saveAll(events);
                         log.info("Events loaded");
                         eventSubscriptionsRepository.deleteAll();
-                        var eventSubscriptions = objectMapper.readValue(new File(folder, "eventSubscriptions.json"), new TypeReference<List<EventSubscription>>(){});
+                        var eventSubscriptions = objectMapper.readValue(new File(folder, "eventSubscriptions.json"), new TypeReference<List<EventSubscription>>() {
+                        });
                         eventSubscriptionsRepository.saveAll(eventSubscriptions);
                         log.info("Event subscriptions loaded");
                         updatesRepository.deleteAll();
-                        var updates = objectMapper.readValue(new File(folder, "updates.json"), new TypeReference<List<vik.telegrambots.meetupbot.dao.model.Update>>(){});
+                        var updates = objectMapper.readValue(new File(folder, "updates.json"), new TypeReference<List<vik.telegrambots.meetupbot.dao.model.Update>>() {
+                        });
                         updatesRepository.saveAll(updates);
                         log.info("Updates loaded");
                         actionsExecutor.sendMessage(chatId, "Data loaded");
@@ -446,7 +450,7 @@ public class MeetupCalendarBot extends AbilityBot {
     public Reply replyToMessageInPrivateChat() {
         BiConsumer<BaseAbilityBot, Update> action = (abilityBot, upd) -> {
             var chatId = getChatId(upd);
-            var messageText = upd.getMessage().getText();
+            var messageText = upd.getMessage().getText().replace("``", "`");
             if (Objects.requireNonNull(userStates.get(chatId)) == UserState.WAITING_NEW_EVENT) {
                 var event = Event.fromMessageText(messageText);
                 event.setFromUser(chatId);
@@ -460,8 +464,10 @@ public class MeetupCalendarBot extends AbilityBot {
                 var buttonPairs = List.of(Pair.of("Send me notifications", SUBSCRIBE_TO_EVENT + " " + savedEvent.getEventId()),
                         Pair.of("I'll skip this one", UNSUBSCRIBE_FROM_EVENT + " " + savedEvent.getEventId()));
                 getAllSubscribedUsers().forEach(id -> {
-                    actionsExecutor.sendMessage(id, savedEvent.toMessageText(), getInlineGridForPairs(buttonPairs, 1));
-                    log.info("Notification was sent to user {}", id);
+                    var result = actionsExecutor.sendMessage(id, savedEvent.toMessageText(), getInlineGridForPairs(buttonPairs, 1), ActionsExecutor.ParseMode.MARKDOWN);
+                    if (result != null) {
+                        log.info("Notification was sent to user {}", id);
+                    }
                 });
                 actionsExecutor.sendMessage(chatId, "All users were notified");
                 scheduleNotifications(savedEvent);
@@ -528,7 +534,8 @@ public class MeetupCalendarBot extends AbilityBot {
                         actionsExecutor.updateMessageText(upd, event.toMessageText()
                                         + "\n\nYour choice was saved.\n"
                                         + CHECK_MARK_EMOJI + "You're now receiving notifications for this event",
-                                getInlineGridForPairs(buttons, 1));
+                                getInlineGridForPairs(buttons, 1),
+                                ActionsExecutor.ParseMode.MARKDOWN);
                     });
                 }
                 case UNSUBSCRIBE_FROM_EVENT, UNSUBSCRIBE_FROM_EVENT_FROM_UPCOMING_EVENTS -> {
@@ -549,7 +556,8 @@ public class MeetupCalendarBot extends AbilityBot {
                         actionsExecutor.updateMessageText(upd, event.toMessageText()
                                         + "\n\nYour choice was saved.\n"
                                         + CROSS_MARK_EMOJI + "You're no longer receiving notifications for this event",
-                                getInlineGridForPairs(buttons, 1));
+                                getInlineGridForPairs(buttons, 1),
+                                ActionsExecutor.ParseMode.MARKDOWN);
                     });
                 }
                 case IM_DONE_BUTTON -> {
@@ -568,7 +576,8 @@ public class MeetupCalendarBot extends AbilityBot {
                                         ? CHECK_MARK_EMOJI + "You're receiving notifications for this event"
                                         : CROSS_MARK_EMOJI + "You're not receiving notifications for this event"),
                                 getInlineGridForPairs(List.of(getSubscriptionButton(subscribed, eventId, true),
-                                        Pair.of(RETURN_BACK_BUTTON, OPEN_UPCOMING_EVENTS)), 1));
+                                        Pair.of(RETURN_BACK_BUTTON, OPEN_UPCOMING_EVENTS)), 1),
+                                ActionsExecutor.ParseMode.MARKDOWN);
                     });
                 }
                 case OPEN_UPCOMING_EVENTS -> {
@@ -660,7 +669,8 @@ public class MeetupCalendarBot extends AbilityBot {
                                     Full info:
                                     %s
                                     """
-                                    .formatted(notificationText, event.toMessageText())));
+                                    .formatted(notificationText, event.toMessageText()),
+                            ActionsExecutor.ParseMode.MARKDOWN));
             taskScheduler.schedule(task, time);
             log.info("Notifications for {} were successfully scheduled", event.getName());
         }
