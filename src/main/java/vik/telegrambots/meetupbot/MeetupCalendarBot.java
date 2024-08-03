@@ -23,8 +23,11 @@ import org.telegram.abilitybots.api.toggle.CustomToggle;
 import org.telegram.abilitybots.api.util.AbilityUtils;
 import org.telegram.abilitybots.api.util.Pair;
 import org.telegram.telegrambots.bots.DefaultBotOptions;
+import org.telegram.telegrambots.meta.api.methods.AnswerInlineQuery;
 import org.telegram.telegrambots.meta.api.objects.InputFile;
 import org.telegram.telegrambots.meta.api.objects.Update;
+import org.telegram.telegrambots.meta.api.objects.inlinequery.inputmessagecontent.InputTextMessageContent;
+import org.telegram.telegrambots.meta.api.objects.inlinequery.result.InlineQueryResultArticle;
 import vik.telegrambots.meetupbot.dao.jparepository.EventSubscriptionsJpaRepository;
 import vik.telegrambots.meetupbot.dao.jparepository.EventsJpaRepository;
 import vik.telegrambots.meetupbot.dao.jparepository.UpdatesJpaRepository;
@@ -50,6 +53,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -105,6 +109,7 @@ import static vik.telegrambots.meetupbot.utils.UserNotificationToggle.TOGGLE_NEW
 public class MeetupCalendarBot extends AbilityBot {
 
     private final Map<Long, UserState> userStates;
+    private final AtomicLong inlineQueryId;
 
     private final long creatorId;
     private final ActionsExecutor actionsExecutor;
@@ -127,6 +132,8 @@ public class MeetupCalendarBot extends AbilityBot {
         creatorId = Long.parseLong(Objects.requireNonNull(env.getProperty("bot.creator-id")));
         actionsExecutor = new ActionsExecutor(this.sender);
         userStates = db.getMap(Constants.USER_STATES_MAPDB_KEY);
+        AtomicLong id = (AtomicLong) db.getVar("InlineQueryId").get();
+        inlineQueryId = Objects.requireNonNullElseGet(id, () -> new AtomicLong(10));
         log.info("Starting bot");
     }
 
@@ -478,6 +485,35 @@ public class MeetupCalendarBot extends AbilityBot {
         };
 
         return Reply.of(action, Flag.TEXT, update -> !update.getMessage().isCommand(), AbilityUtils::isUserMessage);
+    }
+
+    public Reply replyToInlineQuery() {
+        BiConsumer<BaseAbilityBot, Update> action = (abilityBot, upd) -> {
+            var searchQuery = upd.getInlineQuery().getQuery();
+            List<Event> result;
+            if (searchQuery.isBlank()) {
+                result = eventsRepository.findUpcomingEvents();
+            } else {
+                result = eventsRepository.findUpcomingEvents().stream()
+                        .filter(event -> event.getName().toLowerCase().contains(searchQuery.toLowerCase()))
+                        .toList();
+            }
+            var answer = AnswerInlineQuery.builder()
+                    .inlineQueryId(upd.getInlineQuery().getId())
+                    .results(result.stream().map(event -> InlineQueryResultArticle.builder()
+                            .id(String.valueOf(inlineQueryId.getAndIncrement()))
+                            .title(event.getName())
+                            .description(Utils.writeDateTime(event.getEventTime()))
+                            .inputMessageContent(InputTextMessageContent.builder()
+                                    .messageText(event.toMessageText())
+                                    .parseMode(ActionsExecutor.ParseMode.MARKDOWN.name())
+                                    .build())
+                            .build()).toList())
+                    .build();
+            actionsExecutor.sendInlineQueryResult(answer);
+        };
+
+        return Reply.of(action, Flag.INLINE_QUERY);
     }
 
     private List<Pair<String, String>> getPairsForUser(Long userId, boolean isFromSettings) {

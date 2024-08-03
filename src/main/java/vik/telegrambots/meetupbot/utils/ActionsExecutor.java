@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.telegram.abilitybots.api.sender.MessageSender;
+import org.telegram.telegrambots.meta.api.methods.AnswerInlineQuery;
 import org.telegram.telegrambots.meta.api.methods.GetMe;
 import org.telegram.telegrambots.meta.api.methods.send.SendDocument;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
@@ -77,16 +78,19 @@ public class ActionsExecutor {
         updateMessageText(getChatId(upd), message.getMessageId(), message.getText(), inlineKeyboardMarkup, null, ParseMode.NULL);
     }
 
-    @SneakyThrows
     public void updateMessageText(Long chatId, Integer messageId, String text, InlineKeyboardMarkup inlineKeyboardMarkup, LinkPreviewOptions linkPreviewOptions, ParseMode parseMode) {
-        sender.execute(EditMessageText.builder()
-                .chatId(chatId)
-                .messageId(messageId)
-                .text(text)
-                .replyMarkup(inlineKeyboardMarkup)
-                .linkPreviewOptions(linkPreviewOptions)
-                .parseMode(parseMode.getAsString())
-                .build());
+        try {
+            sender.execute(EditMessageText.builder()
+                    .chatId(chatId)
+                    .messageId(messageId)
+                    .text(text)
+                    .replyMarkup(inlineKeyboardMarkup)
+                    .linkPreviewOptions(linkPreviewOptions)
+                    .parseMode(parseMode.getAsString())
+                    .build());
+        } catch (TelegramApiException e) {
+            log.error("Can't update message text in chat {}", chatId, e);
+        }
     }
 
     public Message sendMessage(Long chatId, String messageText, Integer replyToMessageId, ReplyKeyboard replyKeyboard, LinkPreviewOptions linkPreviewOptions, ParseMode parseMode) {
@@ -116,6 +120,14 @@ public class ActionsExecutor {
             sender.sendDocument(sendDocument);
         } catch (TelegramApiException e) {
             log.error("Can't send file {} to chat {}", inputFile.getMediaName(), chatId, e);
+        }
+    }
+
+    public void sendInlineQueryResult(AnswerInlineQuery inlineQueryResult) {
+        try {
+            sender.execute(inlineQueryResult);
+        } catch (TelegramApiException e) {
+            log.error("Can't send inlineQueryResult: {}", inlineQueryResult, e);
         }
     }
 
