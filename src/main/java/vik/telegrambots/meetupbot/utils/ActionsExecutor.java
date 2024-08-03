@@ -136,7 +136,7 @@ public class ActionsExecutor {
         HTML,
         NULL;
 
-        private String getAsString() {
+        public String getAsString() {
             return this == ParseMode.NULL ? null : this.name().toLowerCase();
         }
     }

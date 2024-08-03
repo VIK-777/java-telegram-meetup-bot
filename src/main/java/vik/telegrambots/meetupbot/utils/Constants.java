@@ -42,6 +42,7 @@ public class Constants {
     public static final String GREEN_DOT_EMOJI = "🟢 ";
     public static final String RED_DOT_EMOJI = "🔴 ";
     public static final String BLUE_DOT_EMOJI = "🔵 ";
+    public static final String EXCLAMATION_MARK_EMOJI = "❗";
     public static String NAME_STARTS_WITH = "Name: ";
     public static String TIME_STARTS_WITH = "Time: ";
     public static String DESCRIPTION_STARTS_WITH = "Description: ";

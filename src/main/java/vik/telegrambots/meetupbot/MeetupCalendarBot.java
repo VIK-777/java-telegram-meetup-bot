@@ -77,6 +77,7 @@ import static vik.telegrambots.meetupbot.utils.Constants.CHECK_MARK_EMOJI;
 import static vik.telegrambots.meetupbot.utils.Constants.CROSS_MARK_EMOJI;
 import static vik.telegrambots.meetupbot.utils.Constants.DISABLE_NEW_EVENT_NOTIFICATIONS;
 import static vik.telegrambots.meetupbot.utils.Constants.ENABLE_NEW_EVENT_NOTIFICATIONS;
+import static vik.telegrambots.meetupbot.utils.Constants.EXCLAMATION_MARK_EMOJI;
 import static vik.telegrambots.meetupbot.utils.Constants.GREEN_DOT_EMOJI;
 import static vik.telegrambots.meetupbot.utils.Constants.IM_DONE_BUTTON;
 import static vik.telegrambots.meetupbot.utils.Constants.IM_DONE_BUTTON_FROM_SETTINGS;
@@ -505,8 +506,8 @@ public class MeetupCalendarBot extends AbilityBot {
                             .title(event.getName())
                             .description(Utils.writeDateTime(event.getEventTime()))
                             .inputMessageContent(InputTextMessageContent.builder()
-                                    .messageText(event.toMessageText())
-                                    .parseMode(ActionsExecutor.ParseMode.MARKDOWN.name())
+                                    .messageText(event.toMessageText() + "\n\n" + EXCLAMATION_MARK_EMOJI + "More events in @meetup\\_calendar\\_bot")
+                                    .parseMode(ActionsExecutor.ParseMode.MARKDOWN.getAsString())
                                     .build())
                             .build()).toList())
                     .build();
