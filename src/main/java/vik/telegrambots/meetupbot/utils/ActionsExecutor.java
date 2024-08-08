@@ -34,8 +34,8 @@ public class ActionsExecutor {
         return sender.execute(new GetMe());
     }
 
-    public void sendMessage(Long chatId, String messageText) {
-        sendMessage(chatId, messageText, null, emptyKeyboard(), null, ParseMode.NULL);
+    public Message sendMessage(Long chatId, String messageText) {
+        return sendMessage(chatId, messageText, null, emptyKeyboard(), null, ParseMode.NULL);
     }
 
     public void sendMessage(Long chatId, String messageText, ParseMode parseMode) {
