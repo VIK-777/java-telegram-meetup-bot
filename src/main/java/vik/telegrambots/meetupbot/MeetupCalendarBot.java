@@ -49,6 +49,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -291,6 +292,26 @@ public class MeetupCalendarBot extends AbilityBot {
                             .map(user -> "%d: %s, %s".formatted(user.getUserId(), fullName(user.toTelegramUser()), user.getUserName()))
                             .collect(Collectors.joining("\n"));
                     actionsExecutor.sendMessage(chatId, message);
+                })
+                .build();
+    }
+
+    public Ability sendPrivateMessage() {
+        return Ability
+                .builder()
+                .name("send_private_message")
+                .info("Send private message to user")
+                .locality(USER)
+                .privacy(CREATOR)
+                .action(ctx -> {
+                    var toUser = ctx.firstArg();
+                    var message = Arrays.stream(ctx.arguments()).skip(1).collect(Collectors.joining(" "));
+                    var result = actionsExecutor.sendMessage(Long.valueOf(toUser), message);
+                    if (result != null) {
+                        actionsExecutor.sendMessage(ctx.chatId(), "Your message was sent");
+                    } else {
+                        actionsExecutor.sendMessage(ctx.chatId(), "Message was not sent, there was an error");
+                    }
                 })
                 .build();
     }
