@@ -293,6 +293,7 @@ public class MeetupCalendarBot extends AbilityBot {
                 .action(ctx -> {
                     var chatId = ctx.chatId();
                     Function<User, String> comparator = (User user) -> "%011d".formatted(user.getUserId());
+                    var map = updatesRepository.findUsersToUpdateTimeAsMap();
                     if (ctx.arguments().length > 0) {
                         comparator = switch (ctx.firstArg()) {
                             case "name" -> (User user) -> fullName(user.toTelegramUser());
@@ -302,14 +303,19 @@ public class MeetupCalendarBot extends AbilityBot {
                                 }
                                 return user.getUserName();
                             };
-                            case "activity" ->
-                                    (User user) -> updatesRepository.findLatestUpdateTimeFromUser(user.getUserId()).toString();
+                            case "activity" -> (User user) -> String.valueOf(map.getOrDefault(user.getUserId(), Instant.EPOCH));
                             default -> comparator;
                         };
                     }
                     var message = usersRepository.findAll().stream()
                             .sorted(Comparator.comparing(comparator))
-                            .map((User user) -> "%d: %s, %s".formatted(user.getUserId(), fullName(user.toTelegramUser()), user.getUserName()))
+                            .map((User user) -> {
+                                var result = "%d: %s, %s".formatted(user.getUserId(), fullName(user.toTelegramUser()), user.getUserName());
+                                if (ctx.arguments().length > 0 && "activity".equals(ctx.firstArg())) {
+                                    result += ", %s".formatted(map.get(user.getUserId()));
+                                }
+                                return result;
+                            })
                             .collect(Collectors.joining("\n"));
                     actionsExecutor.sendMessage(chatId, message);
                 })
