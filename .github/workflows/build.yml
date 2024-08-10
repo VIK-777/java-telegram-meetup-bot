@@ -35,13 +35,26 @@ jobs:
         validate-wrappers: true
     - name: Build with Gradle
       run: ./gradlew clean build
-    - name: Copy bootJar to the server
+    - name: Copy restart script to libs
+      uses: canastro/copy-file-action@master
+      with:
+        source: "scripts/restart.sh"
+        target: "build/libs/restart.sh"
+    - name: Copy files to the server
       uses: appleboy/scp-action@v0.1.7
       with:
         host: ${{ secrets.SSH_HOST }}
         port: ${{ secrets.SSH_PORT }}
         username: ${{ secrets.SSH_USERNAME }}
         key: ${{ secrets.SSH_KEY }}
-        source: "build/libs/meetupbot-0.0.1-SNAPSHOT.jar"
-        target: /home/ubuntu/meetup_calendar_bot/jars
+        source: build/libs/*
+        target: /home/ubuntu/meetup_calendar_bot/bin
         strip_components: 2
+    - name: Restart application
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.SSH_HOST }}
+        port: ${{ secrets.SSH_PORT }}
+        username: ${{ secrets.SSH_USERNAME }}
+        key: ${{ secrets.SSH_KEY }}
+        script: /home/ubuntu/meetup_calendar_bot/bin/restart.sh >> /home/ubuntu/meetup_calendar_bot/prod/logs/restart_script.log 2>> /home/ubuntu/meetup_calendar_bot/prod/logs/restart_script.err < /dev/null

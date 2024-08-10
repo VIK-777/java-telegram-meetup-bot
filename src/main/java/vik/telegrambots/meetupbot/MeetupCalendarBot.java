@@ -8,6 +8,8 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.core.env.Environment;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.stereotype.Component;
@@ -516,8 +518,10 @@ public class MeetupCalendarBot extends AbilityBot {
             if (searchQuery.isBlank()) {
                 result = eventsRepository.findUpcomingEvents();
             } else {
+                var lowerCaseSearchQuery = searchQuery.toLowerCase();
                 result = eventsRepository.findUpcomingEvents().stream()
-                        .filter(event -> event.getName().toLowerCase().contains(searchQuery.toLowerCase()))
+                        .filter(event -> event.getName().toLowerCase().contains(lowerCaseSearchQuery)
+                                || event.getDescription().toLowerCase().contains(lowerCaseSearchQuery))
                         .toList();
             }
             var answer = AnswerInlineQuery.builder()
@@ -742,5 +746,10 @@ public class MeetupCalendarBot extends AbilityBot {
                 .filter(isSubscribedToNotification)
                 .map(User::getUserId)
                 .collect(Collectors.toSet());
+    }
+
+    @EventListener(ApplicationReadyEvent.class)
+    private void notifyOnBotStart() {
+        actionsExecutor.sendMessage(creatorId(), "Bot started");
     }
 }
