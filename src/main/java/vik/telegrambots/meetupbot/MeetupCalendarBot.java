@@ -52,6 +52,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -59,6 +60,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -290,8 +292,24 @@ public class MeetupCalendarBot extends AbilityBot {
                 .privacy(CREATOR)
                 .action(ctx -> {
                     var chatId = ctx.chatId();
+                    Function<User, String> comparator = (User user) -> "%011d".formatted(user.getUserId());
+                    if (ctx.arguments().length > 0) {
+                        comparator = switch (ctx.firstArg()) {
+                            case "name" -> (User user) -> fullName(user.toTelegramUser());
+                            case "username" -> (User user) -> {
+                                if (user.getUserName() == null) {
+                                    return "null";
+                                }
+                                return user.getUserName();
+                            };
+                            case "activity" ->
+                                    (User user) -> updatesRepository.findLatestUpdateTimeFromUser(user.getUserId()).toString();
+                            default -> comparator;
+                        };
+                    }
                     var message = usersRepository.findAll().stream()
-                            .map(user -> "%d: %s, %s".formatted(user.getUserId(), fullName(user.toTelegramUser()), user.getUserName()))
+                            .sorted(Comparator.comparing(comparator))
+                            .map((User user) -> "%d: %s, %s".formatted(user.getUserId(), fullName(user.toTelegramUser()), user.getUserName()))
                             .collect(Collectors.joining("\n"));
                     actionsExecutor.sendMessage(chatId, message);
                 })
