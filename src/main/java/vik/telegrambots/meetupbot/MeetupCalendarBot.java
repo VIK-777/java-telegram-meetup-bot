@@ -529,7 +529,7 @@ public class MeetupCalendarBot extends AbilityBot {
                     .results(result.stream().map(event -> InlineQueryResultArticle.builder()
                             .id(String.valueOf(inlineQueryId.getAndIncrement()))
                             .title(event.getName())
-                            .description(Utils.writeDateTime(event.getEventTime()))
+                            .description(Utils.writeDateTime(event.getEventTime()) + "\n" + event.getDescription())
                             .inputMessageContent(InputTextMessageContent.builder()
                                     .messageText(event.toMessageText() + "\n\n" + EXCLAMATION_MARK_EMOJI + "More events in @meetup\\_calendar\\_bot")
                                     .parseMode(ActionsExecutor.ParseMode.MARKDOWN.getAsString())
