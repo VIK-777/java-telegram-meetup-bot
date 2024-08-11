@@ -86,8 +86,10 @@ import static vik.telegrambots.meetupbot.utils.Constants.EXCLAMATION_MARK_EMOJI;
 import static vik.telegrambots.meetupbot.utils.Constants.GREEN_DOT_EMOJI;
 import static vik.telegrambots.meetupbot.utils.Constants.IM_DONE_BUTTON;
 import static vik.telegrambots.meetupbot.utils.Constants.IM_DONE_BUTTON_FROM_SETTINGS;
+import static vik.telegrambots.meetupbot.utils.Constants.IM_DONE_BUTTON_TEXT;
 import static vik.telegrambots.meetupbot.utils.Constants.NAH_I_DONT_LIKE_SPAM;
 import static vik.telegrambots.meetupbot.utils.Constants.NEW_EVENT_MESSAGE;
+import static vik.telegrambots.meetupbot.utils.Constants.NOTIFICATIONS_SETTINGS_TEXT;
 import static vik.telegrambots.meetupbot.utils.Constants.NO_UPCOMING_EVENTS;
 import static vik.telegrambots.meetupbot.utils.Constants.OPEN_EVENT_INFORMATION;
 import static vik.telegrambots.meetupbot.utils.Constants.OPEN_UPCOMING_EVENTS;
@@ -108,6 +110,8 @@ import static vik.telegrambots.meetupbot.utils.UserNotificationToggle.TOGGLE_1_W
 import static vik.telegrambots.meetupbot.utils.UserNotificationToggle.TOGGLE_1_WEEK_NOTIFICATION_FROM_SETTINGS;
 import static vik.telegrambots.meetupbot.utils.UserNotificationToggle.TOGGLE_6_HOURS_NOTIFICATION;
 import static vik.telegrambots.meetupbot.utils.UserNotificationToggle.TOGGLE_6_HOURS_NOTIFICATION_FROM_SETTINGS;
+import static vik.telegrambots.meetupbot.utils.UserNotificationToggle.TOGGLE_INFO_NOTIFICATION;
+import static vik.telegrambots.meetupbot.utils.UserNotificationToggle.TOGGLE_INFO_NOTIFICATION_FROM_SETTINGS;
 import static vik.telegrambots.meetupbot.utils.UserNotificationToggle.TOGGLE_NEW_EVENTS_NOTIFICATION_FROM_SETTINGS;
 import static vik.telegrambots.meetupbot.utils.Utils.writeDateTimeForInlineQuerySearch;
 
@@ -257,6 +261,38 @@ public class MeetupCalendarBot extends AbilityBot {
                 .locality(USER)
                 .privacy(PUBLIC)
                 .action(ctx -> actionsExecutor.sendMessage(ctx.chatId(), BOT_FULL_INFO_MESSAGE))
+                .build();
+    }
+
+    public Ability turnOnInfoNotificationsForEveryone() {
+        return Ability
+                .builder()
+                .name("turn_on_info_everyone")
+                .info("Turn on info notifications for everyone")
+                .locality(USER)
+                .privacy(CREATOR)
+                .action(ctx -> {
+                    var allUsers = usersRepository.findAll();
+                    allUsers.forEach(user -> user.setSendInfoNotifications(true));
+                    usersRepository.saveAll(allUsers);
+                    actionsExecutor.sendMessage(ctx.chatId(), "Done");
+                })
+                .build();
+    }
+
+    public Ability sendLatestNews() {
+        return Ability
+                .builder()
+                .name("send_latest_news")
+                .info("send latest news")
+                .locality(USER)
+                .privacy(CREATOR)
+                .action(ctx -> {
+                    var usersForNotifications = usersRepository.findAllBySendInfoNotifications(true);
+                    // TODO create post for inline query
+                    usersForNotifications.forEach(user -> actionsExecutor.sendMessage(user.getUserId(), "News"));
+                    actionsExecutor.sendMessage(ctx.chatId(), "Latest news were sent");
+                })
                 .build();
     }
 
@@ -460,7 +496,7 @@ public class MeetupCalendarBot extends AbilityBot {
                 .info("Notification settings")
                 .locality(USER)
                 .privacy(PUBLIC)
-                .action(ctx -> actionsExecutor.sendMessage(ctx.chatId(), "Notification settings",
+                .action(ctx -> actionsExecutor.sendMessage(ctx.chatId(), "Notification settings:\n" + NOTIFICATIONS_SETTINGS_TEXT,
                         getInlineGridForPairs(getPairsForUser(ctx.chatId(), true), 1)))
                 .build();
     }
@@ -549,7 +585,6 @@ public class MeetupCalendarBot extends AbilityBot {
                         .filter(event -> event.getName().toLowerCase().contains(lowerCaseSearchQuery)
                                 || event.getDescription().toLowerCase().contains(lowerCaseSearchQuery)
                                 || writeDateTimeForInlineQuerySearch(event.getEventTime()).contains(lowerCaseSearchQuery))
-                        .filter(event -> !event.getName().contains("Civo"))
                         .toList();
             }
             var answer = AnswerInlineQuery.builder()
@@ -573,6 +608,7 @@ public class MeetupCalendarBot extends AbilityBot {
     private List<Pair<String, String>> getPairsForUser(Long userId, boolean isFromSettings) {
         List<Pair<String, String>> notificationPairs = new ArrayList<>();
         usersRepository.findById(userId).ifPresent(user -> {
+            notificationPairs.add(getPairForOption(userId, user.getSendInfoNotifications(), isFromSettings ? TOGGLE_INFO_NOTIFICATION_FROM_SETTINGS : TOGGLE_INFO_NOTIFICATION));
             if (isFromSettings) {
                 notificationPairs.add(getPairForOption(userId, user.getSendNotifications(), TOGGLE_NEW_EVENTS_NOTIFICATION_FROM_SETTINGS));
             }
@@ -582,7 +618,7 @@ public class MeetupCalendarBot extends AbilityBot {
             notificationPairs.add(getPairForOption(userId, user.getSixHoursNotification(), isFromSettings ? TOGGLE_6_HOURS_NOTIFICATION_FROM_SETTINGS : TOGGLE_6_HOURS_NOTIFICATION));
             notificationPairs.add(getPairForOption(userId, user.getOneHourNotification(), isFromSettings ? TOGGLE_1_HOUR_NOTIFICATION_FROM_SETTINGS : TOGGLE_1_HOUR_NOTIFICATION));
         });
-        notificationPairs.add(Pair.of("I'm done", isFromSettings ? IM_DONE_BUTTON_FROM_SETTINGS : IM_DONE_BUTTON));
+        notificationPairs.add(Pair.of(IM_DONE_BUTTON_TEXT, isFromSettings ? IM_DONE_BUTTON_FROM_SETTINGS : IM_DONE_BUTTON));
         return notificationPairs;
     }
 
@@ -603,7 +639,7 @@ public class MeetupCalendarBot extends AbilityBot {
                         user.setSendNotifications(callbackQueryAction.equals(ENABLE_NEW_EVENT_NOTIFICATIONS));
                         usersRepository.save(user);
                     });
-                    actionsExecutor.updateMessageText(upd, "Thank you! Let's setup additional notifications",
+                    actionsExecutor.updateMessageText(upd, "Thank you! Let's setup additional notifications.\n" + NOTIFICATIONS_SETTINGS_TEXT,
                             getInlineGridForPairs(getPairsForUser(chatId, false), 1));
                 }
                 case SUBSCRIBE_TO_EVENT, SUBSCRIBE_TO_EVENT_FROM_UPCOMING_EVENTS -> {
@@ -711,6 +747,8 @@ public class MeetupCalendarBot extends AbilityBot {
         return switch (callbackAction) {
             case TOGGLE_NEW_EVENTS_NOTIFICATION, TOGGLE_NEW_EVENTS_NOTIFICATION_FROM_SETTINGS ->
                     Pair.of(user::setSendNotifications, user::getSendNotifications);
+            case TOGGLE_INFO_NOTIFICATION, TOGGLE_INFO_NOTIFICATION_FROM_SETTINGS ->
+                    Pair.of(user::setSendInfoNotifications, user::getSendInfoNotifications);
             case TOGGLE_1_WEEK_NOTIFICATION, TOGGLE_1_WEEK_NOTIFICATION_FROM_SETTINGS ->
                     Pair.of(user::setOneWeekNotification, user::getOneWeekNotification);
             case TOGGLE_1_DAY_NOTIFICATION, TOGGLE_1_DAY_NOTIFICATION_FROM_SETTINGS ->
@@ -727,10 +765,12 @@ public class MeetupCalendarBot extends AbilityBot {
     private boolean includeNewEventNotificationsFlag(UserNotificationToggle callbackAction) {
         return switch (callbackAction) {
             case TOGGLE_NEW_EVENTS_NOTIFICATION, TOGGLE_1_WEEK_NOTIFICATION, TOGGLE_1_DAY_NOTIFICATION,
-                 TOGGLE_12_HOURS_NOTIFICATION, TOGGLE_6_HOURS_NOTIFICATION, TOGGLE_1_HOUR_NOTIFICATION -> false;
+                 TOGGLE_12_HOURS_NOTIFICATION, TOGGLE_6_HOURS_NOTIFICATION, TOGGLE_1_HOUR_NOTIFICATION,
+                 TOGGLE_INFO_NOTIFICATION -> false;
             case TOGGLE_NEW_EVENTS_NOTIFICATION_FROM_SETTINGS, TOGGLE_1_WEEK_NOTIFICATION_FROM_SETTINGS,
                  TOGGLE_1_DAY_NOTIFICATION_FROM_SETTINGS, TOGGLE_12_HOURS_NOTIFICATION_FROM_SETTINGS,
-                 TOGGLE_6_HOURS_NOTIFICATION_FROM_SETTINGS, TOGGLE_1_HOUR_NOTIFICATION_FROM_SETTINGS -> true;
+                 TOGGLE_6_HOURS_NOTIFICATION_FROM_SETTINGS, TOGGLE_1_HOUR_NOTIFICATION_FROM_SETTINGS,
+                 TOGGLE_INFO_NOTIFICATION_FROM_SETTINGS -> true;
         };
     }
 

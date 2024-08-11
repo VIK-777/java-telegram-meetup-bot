@@ -43,6 +43,7 @@ public class Constants {
     public static final String RED_DOT_EMOJI = "🔴 ";
     public static final String BLUE_DOT_EMOJI = "🔵 ";
     public static final String EXCLAMATION_MARK_EMOJI = "❗";
+    public static final String FLOPPY_DISK_EMOJI = "\uD83D\uDCBE ";
     public static String NAME_STARTS_WITH = "Name: ";
     public static String TIME_STARTS_WITH = "Time: ";
     public static String DESCRIPTION_STARTS_WITH = "Description: ";
@@ -58,4 +59,6 @@ public class Constants {
                     + TIME_EMOJI + TIME_STARTS_WITH + "%s\n"
                     + DESCRIPTION_EMOJI + DESCRIPTION_STARTS_WITH + "%s\n"
                     + LINK_EMOJI + LINK_STARTS_WITH + "%s";
+    public static final String IM_DONE_BUTTON_TEXT = FLOPPY_DISK_EMOJI + "I'm done";
+    public static final String NOTIFICATIONS_SETTINGS_TEXT = "Tick which notifications you want to receive and then click\n" + IM_DONE_BUTTON_TEXT;
 }

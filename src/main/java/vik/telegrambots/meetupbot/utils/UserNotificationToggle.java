@@ -8,12 +8,14 @@ import lombok.RequiredArgsConstructor;
 public enum UserNotificationToggle {
 
     TOGGLE_NEW_EVENTS_NOTIFICATION("New event notifications", true),
+    TOGGLE_INFO_NOTIFICATION("Bot news notifications", false),
     TOGGLE_1_WEEK_NOTIFICATION("One week before event", false),
     TOGGLE_1_DAY_NOTIFICATION("One day before event", false),
     TOGGLE_12_HOURS_NOTIFICATION("12 hours before event", false),
     TOGGLE_6_HOURS_NOTIFICATION("6 hours before event", false),
     TOGGLE_1_HOUR_NOTIFICATION("1 hour before event", false),
     TOGGLE_NEW_EVENTS_NOTIFICATION_FROM_SETTINGS("New event notifications", true),
+    TOGGLE_INFO_NOTIFICATION_FROM_SETTINGS("Bot news notifications", true),
     TOGGLE_1_DAY_NOTIFICATION_FROM_SETTINGS("One day before event", true),
     TOGGLE_1_WEEK_NOTIFICATION_FROM_SETTINGS("One week before event", true),
     TOGGLE_12_HOURS_NOTIFICATION_FROM_SETTINGS("12 hours before event", true),

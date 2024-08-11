@@ -42,9 +42,14 @@ public class User implements Serializable {
     Boolean isPremium;
     Boolean addedToAttachmentMenu;
 
+    // New events notifications
     @NonNull
     @Builder.Default
     Boolean sendNotifications = false;
+    // Bot news, updates, etc.
+    @NonNull
+    @Builder.Default
+    Boolean sendInfoNotifications = true;
     @NonNull
     @Builder.Default
     Boolean oneWeekNotification = false;
