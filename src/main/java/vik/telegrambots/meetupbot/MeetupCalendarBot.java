@@ -13,6 +13,7 @@ import org.springframework.context.event.EventListener;
 import org.springframework.core.env.Environment;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.stereotype.Component;
+import org.springframework.util.ResourceUtils;
 import org.telegram.abilitybots.api.bot.AbilityBot;
 import org.telegram.abilitybots.api.bot.BaseAbilityBot;
 import org.telegram.abilitybots.api.db.DBContext;
@@ -44,6 +45,7 @@ import vik.telegrambots.meetupbot.utils.UserState;
 import vik.telegrambots.meetupbot.utils.Utils;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.time.Instant;
@@ -83,6 +85,7 @@ import static vik.telegrambots.meetupbot.utils.Constants.CROSS_MARK_EMOJI;
 import static vik.telegrambots.meetupbot.utils.Constants.DISABLE_NEW_EVENT_NOTIFICATIONS;
 import static vik.telegrambots.meetupbot.utils.Constants.ENABLE_NEW_EVENT_NOTIFICATIONS;
 import static vik.telegrambots.meetupbot.utils.Constants.EXCLAMATION_MARK_EMOJI;
+import static vik.telegrambots.meetupbot.utils.Constants.FEATURE_INLINE_QUERY_MESSAGE;
 import static vik.telegrambots.meetupbot.utils.Constants.GREEN_DOT_EMOJI;
 import static vik.telegrambots.meetupbot.utils.Constants.IM_DONE_BUTTON;
 import static vik.telegrambots.meetupbot.utils.Constants.IM_DONE_BUTTON_FROM_SETTINGS;
@@ -141,7 +144,7 @@ public class MeetupCalendarBot extends AbilityBot {
     public MeetupCalendarBot(Environment env, DBContext db) {
         super(env.getProperty("bot.token"), env.getProperty("bot.name"), db, getBotToggle(), getBotOptions());
         creatorId = Long.parseLong(Objects.requireNonNull(env.getProperty("bot.creator-id")));
-        actionsExecutor = new ActionsExecutor(this.sender);
+        actionsExecutor = new ActionsExecutor(this);
         userStates = db.getMap(Constants.USER_STATES_MAPDB_KEY);
         AtomicLong id = (AtomicLong) db.getVar("InlineQueryId").get();
         inlineQueryId = Objects.requireNonNullElseGet(id, () -> new AtomicLong(10));
@@ -288,10 +291,16 @@ public class MeetupCalendarBot extends AbilityBot {
                 .locality(USER)
                 .privacy(CREATOR)
                 .action(ctx -> {
-                    var usersForNotifications = usersRepository.findAllBySendInfoNotifications(true);
-                    // TODO create post for inline query
-                    usersForNotifications.forEach(user -> actionsExecutor.sendMessage(user.getUserId(), "News"));
-                    actionsExecutor.sendMessage(ctx.chatId(), "Latest news were sent");
+                    var pathToFile = "classpath:gifs/20240911_inline_query_update.MP4";
+                    try {
+                        var inputFile = new InputFile(ResourceUtils.getFile(pathToFile));
+                        var usersForNotifications = usersRepository.findAllBySendInfoNotifications(true);
+                        usersForNotifications.forEach(user -> actionsExecutor.sendAnimation(user.getUserId(), inputFile, FEATURE_INLINE_QUERY_MESSAGE));
+                        actionsExecutor.sendMessage(ctx.chatId(), "Latest news were sent");
+                    } catch (FileNotFoundException e) {
+                        log.error("File was not found: {}", pathToFile);
+                        actionsExecutor.sendMessage(ctx.chatId(), "File was not found");
+                    }
                 })
                 .build();
     }

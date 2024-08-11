@@ -1,11 +1,12 @@
 package vik.telegrambots.meetupbot.utils;
 
-import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.telegram.abilitybots.api.bot.AbilityBot;
 import org.telegram.abilitybots.api.sender.MessageSender;
 import org.telegram.telegrambots.meta.api.methods.AnswerInlineQuery;
 import org.telegram.telegrambots.meta.api.methods.GetMe;
+import org.telegram.telegrambots.meta.api.methods.send.SendAnimation;
 import org.telegram.telegrambots.meta.api.methods.send.SendDocument;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
@@ -24,10 +25,15 @@ import static org.telegram.abilitybots.api.util.AbilityUtils.getChatId;
 import static vik.telegrambots.meetupbot.utils.KeyboardFactory.emptyKeyboard;
 
 @Slf4j
-@RequiredArgsConstructor
 public class ActionsExecutor {
 
+    private final AbilityBot abilityBot;
     private final MessageSender sender;
+
+    public ActionsExecutor(AbilityBot abilityBot) {
+        this.abilityBot = abilityBot;
+        this.sender = abilityBot.sender();
+    }
 
     @SneakyThrows
     public User getBotInfo() {
@@ -120,6 +126,20 @@ public class ActionsExecutor {
             sender.sendDocument(sendDocument);
         } catch (TelegramApiException e) {
             log.error("Can't send file {} to chat {}", inputFile.getMediaName(), chatId, e);
+        }
+    }
+
+    public void sendAnimation(Long chatId, InputFile inputFile, String caption) {
+        var sendAnimation = SendAnimation.builder()
+                .animation(inputFile)
+                .chatId(chatId)
+                .caption(caption)
+                .parseMode(ParseMode.HTML.getAsString())
+                .build();
+        try {
+            abilityBot.execute(sendAnimation);
+        } catch (TelegramApiException e) {
+            log.error("Can't send video {} to chat {}", inputFile.getMediaName(), chatId, e);
         }
     }
 

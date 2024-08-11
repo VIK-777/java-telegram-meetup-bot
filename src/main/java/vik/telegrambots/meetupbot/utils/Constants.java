@@ -44,6 +44,7 @@ public class Constants {
     public static final String BLUE_DOT_EMOJI = "🔵 ";
     public static final String EXCLAMATION_MARK_EMOJI = "❗";
     public static final String FLOPPY_DISK_EMOJI = "\uD83D\uDCBE ";
+    public static final String NEW_EMOJI = "\uD83C\uDD95 ";
     public static String NAME_STARTS_WITH = "Name: ";
     public static String TIME_STARTS_WITH = "Time: ";
     public static String DESCRIPTION_STARTS_WITH = "Description: ";
@@ -60,5 +61,17 @@ public class Constants {
                     + DESCRIPTION_EMOJI + DESCRIPTION_STARTS_WITH + "%s\n"
                     + LINK_EMOJI + LINK_STARTS_WITH + "%s";
     public static final String IM_DONE_BUTTON_TEXT = FLOPPY_DISK_EMOJI + "I'm done";
-    public static final String NOTIFICATIONS_SETTINGS_TEXT = "Tick which notifications you want to receive and then click\n" + IM_DONE_BUTTON_TEXT;
+    public static final String NOTIFICATIONS_SETTINGS_TEXT = "Tick which notifications you want to receive and then click \"" + IM_DONE_BUTTON_TEXT + "\"";
+    public static final String FEATURE_INLINE_QUERY_MESSAGE = NEW_EMOJI + """
+            Now <b>sharing meetups</b> became much more easier!!!
+            You can write following in <b>any</b> chat:
+            
+            @meetup_calendar_bot <i>your search</i>
+            
+            And then just clicking on the meetup, it will be sent there!
+            
+            Try it out and share something interesting with your friends! 😉
+            
+            <i>P.S.</i> If you don't want to receive notifications about new features, you can disable it in /settings <span class="tg-spoiler">but I will be very sad 😢</span>
+            """;
 }
