@@ -290,16 +290,17 @@ public class MeetupCalendarBot extends AbilityBot {
                 .locality(USER)
                 .privacy(CREATOR)
                 .action(ctx -> {
-                    var pathToFile = "gifs/20240911_inline_query_update.MP4";
+                    var fileName = "20240911_inline_query_update.MP4";
+                    var pathToFile = "gifs/" + fileName;
                     try {
-                        var classPathResource = new ClassPathResource(pathToFile).getFile();
-                        var inputFile = new InputFile(classPathResource);
+                        var classPathResource = new ClassPathResource(pathToFile).getInputStream();
+                        var inputFile = new InputFile(classPathResource, fileName);
                         var usersForNotifications = usersRepository.findAllBySendInfoNotifications(true);
                         usersForNotifications.forEach(user -> actionsExecutor.sendAnimation(user.getUserId(), inputFile, FEATURE_INLINE_QUERY_MESSAGE));
                         actionsExecutor.sendMessage(ctx.chatId(), "Latest news were sent");
                     } catch (IOException e) {
                         log.error("Exception occurred with file {}: {}", pathToFile, e.getMessage());
-                        actionsExecutor.sendMessage(ctx.chatId(), "Exception occurred with file %s".formatted(e.getMessage()));
+                        actionsExecutor.sendMessage(ctx.chatId(), "Exception occurred with file: %s".formatted(e.getMessage()));
                     }
                 })
                 .build();
