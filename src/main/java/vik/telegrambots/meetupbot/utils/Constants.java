@@ -72,6 +72,6 @@ public class Constants {
             
             Try it out and share something interesting with your friends! 😉
             
-            <i>P.S.</i> If you don't want to receive notifications about new features, you can disable it in /settings <span class="tg-spoiler">but I will be very sad 😢</span>
+            <i>P.S.</i> If you don't want to receive notifications about new features, you can disable it in /settings <span class="tg-spoiler">but I will feel very sad 😢</span>
             """;
 }

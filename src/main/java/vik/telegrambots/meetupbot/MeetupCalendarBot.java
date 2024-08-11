@@ -11,9 +11,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.core.env.Environment;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.stereotype.Component;
-import org.springframework.util.ResourceUtils;
 import org.telegram.abilitybots.api.bot.AbilityBot;
 import org.telegram.abilitybots.api.bot.BaseAbilityBot;
 import org.telegram.abilitybots.api.db.DBContext;
@@ -45,7 +45,6 @@ import vik.telegrambots.meetupbot.utils.UserState;
 import vik.telegrambots.meetupbot.utils.Utils;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.time.Instant;
@@ -291,15 +290,16 @@ public class MeetupCalendarBot extends AbilityBot {
                 .locality(USER)
                 .privacy(CREATOR)
                 .action(ctx -> {
-                    var pathToFile = "classpath:gifs/20240911_inline_query_update.MP4";
+                    var pathToFile = "gifs/20240911_inline_query_update.MP4";
                     try {
-                        var inputFile = new InputFile(ResourceUtils.getFile(pathToFile));
+                        var classPathResource = new ClassPathResource(pathToFile).getFile();
+                        var inputFile = new InputFile(classPathResource);
                         var usersForNotifications = usersRepository.findAllBySendInfoNotifications(true);
                         usersForNotifications.forEach(user -> actionsExecutor.sendAnimation(user.getUserId(), inputFile, FEATURE_INLINE_QUERY_MESSAGE));
                         actionsExecutor.sendMessage(ctx.chatId(), "Latest news were sent");
-                    } catch (FileNotFoundException e) {
-                        log.error("File was not found: {}", pathToFile);
-                        actionsExecutor.sendMessage(ctx.chatId(), "File was not found");
+                    } catch (IOException e) {
+                        log.error("Exception occurred with file {}: {}", pathToFile, e.getMessage());
+                        actionsExecutor.sendMessage(ctx.chatId(), "Exception occurred with file %s".formatted(e.getMessage()));
                     }
                 })
                 .build();
