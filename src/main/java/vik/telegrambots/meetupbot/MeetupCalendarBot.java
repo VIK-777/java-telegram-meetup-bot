@@ -109,6 +109,7 @@ import static vik.telegrambots.meetupbot.utils.UserNotificationToggle.TOGGLE_1_W
 import static vik.telegrambots.meetupbot.utils.UserNotificationToggle.TOGGLE_6_HOURS_NOTIFICATION;
 import static vik.telegrambots.meetupbot.utils.UserNotificationToggle.TOGGLE_6_HOURS_NOTIFICATION_FROM_SETTINGS;
 import static vik.telegrambots.meetupbot.utils.UserNotificationToggle.TOGGLE_NEW_EVENTS_NOTIFICATION_FROM_SETTINGS;
+import static vik.telegrambots.meetupbot.utils.Utils.writeDateTimeForInlineQuerySearch;
 
 @Slf4j
 @Component
@@ -303,7 +304,8 @@ public class MeetupCalendarBot extends AbilityBot {
                                 }
                                 return user.getUserName();
                             };
-                            case "activity" -> (User user) -> String.valueOf(map.getOrDefault(user.getUserId(), Instant.EPOCH));
+                            case "activity" ->
+                                    (User user) -> String.valueOf(map.getOrDefault(user.getUserId(), Instant.EPOCH));
                             default -> comparator;
                         };
                     }
@@ -538,19 +540,21 @@ public class MeetupCalendarBot extends AbilityBot {
     public Reply replyToInlineQuery() {
         BiConsumer<BaseAbilityBot, Update> action = (abilityBot, upd) -> {
             var searchQuery = upd.getInlineQuery().getQuery();
-            List<Event> result;
+            List<Event> events;
             if (searchQuery.isBlank()) {
-                result = eventsRepository.findUpcomingEvents();
+                events = eventsRepository.findUpcomingEvents();
             } else {
                 var lowerCaseSearchQuery = searchQuery.toLowerCase();
-                result = eventsRepository.findUpcomingEvents().stream()
+                events = eventsRepository.findUpcomingEvents().stream()
                         .filter(event -> event.getName().toLowerCase().contains(lowerCaseSearchQuery)
-                                || event.getDescription().toLowerCase().contains(lowerCaseSearchQuery))
+                                || event.getDescription().toLowerCase().contains(lowerCaseSearchQuery)
+                                || writeDateTimeForInlineQuerySearch(event.getEventTime()).contains(lowerCaseSearchQuery))
+                        .filter(event -> !event.getName().contains("Civo"))
                         .toList();
             }
             var answer = AnswerInlineQuery.builder()
                     .inlineQueryId(upd.getInlineQuery().getId())
-                    .results(result.stream().map(event -> InlineQueryResultArticle.builder()
+                    .results(events.stream().map(event -> InlineQueryResultArticle.builder()
                             .id(String.valueOf(inlineQueryId.getAndIncrement()))
                             .title(event.getName())
                             .description(Utils.writeDateTime(event.getEventTime()) + "\n" + event.getDescription())
@@ -751,7 +755,7 @@ public class MeetupCalendarBot extends AbilityBot {
                     .forEach(id -> actionsExecutor.sendMessage(id,
                             """
                                     %s
-                                                                    
+                                    
                                     Full info:
                                     %s
                                     """
