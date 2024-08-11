@@ -46,6 +46,7 @@ import vik.telegrambots.meetupbot.utils.Utils;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.PrintStream;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -292,16 +293,18 @@ public class MeetupCalendarBot extends AbilityBot {
                 .action(ctx -> {
                     var fileName = "20240911_inline_query_update.MP4";
                     var pathToFile = "gifs/" + fileName;
-                    try {
-                        var classPathResource = new ClassPathResource(pathToFile).getInputStream();
-                        var inputFile = new InputFile(classPathResource, fileName);
-                        var usersForNotifications = usersRepository.findAllBySendInfoNotifications(true);
-                        usersForNotifications.forEach(user -> actionsExecutor.sendAnimation(user.getUserId(), inputFile, FEATURE_INLINE_QUERY_MESSAGE));
-                        actionsExecutor.sendMessage(ctx.chatId(), "Latest news were sent");
-                    } catch (IOException e) {
-                        log.error("Exception occurred with file {}: {}", pathToFile, e.getMessage());
-                        actionsExecutor.sendMessage(ctx.chatId(), "Exception occurred with file: %s".formatted(e.getMessage()));
-                    }
+                    var usersForNotifications = usersRepository.findAllBySendInfoNotifications(true);
+                    usersForNotifications.forEach(user -> {
+                        try {
+                            InputStream classPathResource = new ClassPathResource(pathToFile).getInputStream();
+                            var inputFile = new InputFile(classPathResource, fileName);
+                            actionsExecutor.sendAnimation(user.getUserId(), inputFile, FEATURE_INLINE_QUERY_MESSAGE);
+                        } catch (IOException e) {
+                            log.error("Exception occurred with file {}: {}", pathToFile, e.getMessage());
+                            actionsExecutor.sendMessage(ctx.chatId(), "Exception occurred with file: %s".formatted(e.getMessage()));
+                        }
+                    });
+                    actionsExecutor.sendMessage(ctx.chatId(), "Latest news were sent");
                 })
                 .build();
     }
