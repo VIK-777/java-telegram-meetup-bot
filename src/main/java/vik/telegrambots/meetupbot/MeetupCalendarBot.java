@@ -66,6 +66,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static org.telegram.abilitybots.api.objects.Locality.USER;
@@ -346,7 +347,7 @@ public class MeetupCalendarBot extends AbilityBot {
                     var map = updatesRepository.findUsersToUpdateTimeAsMap();
                     if (ctx.arguments().length > 0) {
                         comparator = switch (ctx.firstArg()) {
-                            case "name" -> (User user) -> fullName(user.toTelegramUser());
+                            case "name" -> (User user) -> fullName(user.toTelegramUser()).trim();
                             case "username" -> (User user) -> {
                                 if (user.getUserName() == null) {
                                     return "null";
@@ -358,15 +359,18 @@ public class MeetupCalendarBot extends AbilityBot {
                             default -> comparator;
                         };
                     }
-                    var message = usersRepository.findAll().stream()
+                    var users = usersRepository.findAll().stream()
                             .sorted(Comparator.comparing(comparator))
                             .map((User user) -> {
-                                var result = "%d: %s, %s".formatted(user.getUserId(), fullName(user.toTelegramUser()), user.getUserName());
+                                var result = "%d, %s, %s".formatted(user.getUserId(), fullName(user.toTelegramUser()), user.getUserName());
                                 if (ctx.arguments().length > 0 && "activity".equals(ctx.firstArg())) {
                                     result += ", %s".formatted(map.get(user.getUserId()));
                                 }
                                 return result;
                             })
+                            .toList();
+                    var message = IntStream.range(0, users.size())
+                            .mapToObj(i -> "%d: %s".formatted(i + 1, users.get(i)))
                             .collect(Collectors.joining("\n"));
                     actionsExecutor.sendMessage(chatId, message);
                 })
