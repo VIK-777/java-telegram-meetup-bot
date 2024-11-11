@@ -98,6 +98,7 @@ import static vik.telegrambots.meetupbot.utils.Constants.NO_UPCOMING_EVENTS;
 import static vik.telegrambots.meetupbot.utils.Constants.OPEN_EVENT_INFORMATION;
 import static vik.telegrambots.meetupbot.utils.Constants.OPEN_UPCOMING_EVENTS;
 import static vik.telegrambots.meetupbot.utils.Constants.RETURN_BACK_BUTTON;
+import static vik.telegrambots.meetupbot.utils.Constants.SMILE_WITH_TEAR_EMOJI;
 import static vik.telegrambots.meetupbot.utils.Constants.SUBSCRIBE_TO_EVENT;
 import static vik.telegrambots.meetupbot.utils.Constants.SUBSCRIBE_TO_EVENT_FROM_UPCOMING_EVENTS;
 import static vik.telegrambots.meetupbot.utils.Constants.UNSUBSCRIBE_FROM_EVENT;
@@ -550,6 +551,30 @@ public class MeetupCalendarBot extends AbilityBot {
                 .build();
     }
 
+    public Ability cancelEvent() {
+        return Ability
+                .builder()
+                .name("cancel_event")
+                .info("cancel_event")
+                .locality(USER)
+                .privacy(CREATOR)
+                .action(ctx -> {
+                    var chatId = ctx.chatId();
+                    eventsRepository.findById(Long.valueOf(ctx.firstArg())).ifPresentOrElse(event -> {
+                        eventSubscriptionsRepository.findAllByEventIdAndSubscribed(event.getEventId(), true)
+                                .forEach(sub -> {
+                                    actionsExecutor.sendMessage(sub.getUserId(), "%s on %s was canceled %s\n%s"
+                                            .formatted(event.getName(), Utils.writeDateTime(event.getEventTime()), SMILE_WITH_TEAR_EMOJI, event.getLink()));
+                                    eventSubscriptionsRepository.deleteById(sub.getRowId());
+                                });
+                        eventsRepository.deleteById(event.getEventId());
+                    }, () -> actionsExecutor.sendMessage(chatId, "Event not found"));
+                    eventsRepository.deleteById(Long.valueOf(ctx.firstArg()));
+                    actionsExecutor.sendMessage(chatId, "Event %s was deleted".formatted(ctx.firstArg()));
+                })
+                .build();
+    }
+
     @SneakyThrows
     public void newEvent(MessageContext ctx) {
         var chatId = ctx.chatId();
@@ -808,16 +833,22 @@ public class MeetupCalendarBot extends AbilityBot {
     private void scheduleNotifications(Event event, Instant time, Predicate<User> predicate, String notificationText) {
         if (time.isAfter(Instant.now())) {
             log.info("Scheduling notifications for {} at {}", event.getName(), time);
-            Runnable task = () -> getUsersForNotification(event.getEventId(), predicate)
-                    .forEach(id -> actionsExecutor.sendMessage(id,
-                            """
-                                    %s
-                                    
-                                    Full info:
-                                    %s
-                                    """
-                                    .formatted(notificationText, event.toMessageText()),
-                            ActionsExecutor.ParseMode.MARKDOWN));
+            Runnable task = () -> {
+                if (!eventsRepository.existsById(event.getEventId())) {
+                    log.info("Event {} doesn't exist. Doing nothing", event);
+                    return;
+                }
+                getUsersForNotification(event.getEventId(), predicate)
+                        .forEach(id -> actionsExecutor.sendMessage(id,
+                                """
+                                        %s
+                                        
+                                        Full info:
+                                        %s
+                                        """
+                                        .formatted(notificationText, event.toMessageText()),
+                                ActionsExecutor.ParseMode.MARKDOWN));
+            };
             taskScheduler.schedule(task, time);
             log.info("Notifications for {} were successfully scheduled", event.getName());
         }

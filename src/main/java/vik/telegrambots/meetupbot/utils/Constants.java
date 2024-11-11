@@ -45,6 +45,7 @@ public class Constants {
     public static final String EXCLAMATION_MARK_EMOJI = "❗";
     public static final String FLOPPY_DISK_EMOJI = "\uD83D\uDCBE ";
     public static final String NEW_EMOJI = "\uD83C\uDD95 ";
+    public static final String SMILE_WITH_TEAR_EMOJI = "\uD83D\uDE22 ";
     public static String NAME_STARTS_WITH = "Name: ";
     public static String TIME_STARTS_WITH = "Time: ";
     public static String DESCRIPTION_STARTS_WITH = "Description: ";
