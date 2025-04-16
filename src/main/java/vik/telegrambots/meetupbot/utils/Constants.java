@@ -26,6 +26,7 @@ public class Constants {
     public static final String RETURN_BACK_BUTTON = "Return back";
     public static final String OPEN_UPCOMING_EVENTS = "OPEN_UPCOMING_EVENTS";
     public static final String USER_STATES_MAPDB_KEY = "userStates";
+    public static final String USER_STATES_PARAMS_MAPDB_KEY = "userStatesParams";
     public static final String SUBSCRIBE_TO_EVENT = "SUBSCRIBE_TO_EVENT";
     public static final String UNSUBSCRIBE_FROM_EVENT = "UNSUBSCRIBE_FROM_EVENT";
     public static final String SUBSCRIBE_TO_EVENT_FROM_UPCOMING_EVENTS = "SUBSCRIBE_TO_EVENT_FROM_UPCOMING_EVENTS";

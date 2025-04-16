@@ -66,10 +66,12 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -125,6 +127,8 @@ import vik.telegrambots.meetupbot.utils.Utils;
 public class MeetupCalendarBot extends AbilityBot {
 
   private final Map<Long, UserState> userStates;
+  private final Map<Long, String> userStatesParams;
+  private final Map<Long, List<ScheduledFuture<?>>> eventSchedules = new HashMap<>();
   private final AtomicLong inlineQueryId;
 
   private final long creatorId;
@@ -148,6 +152,7 @@ public class MeetupCalendarBot extends AbilityBot {
     creatorId = Long.parseLong(Objects.requireNonNull(env.getProperty("bot.creator-id")));
     actionsExecutor = new ActionsExecutor(this);
     userStates = db.getMap(Constants.USER_STATES_MAPDB_KEY);
+    userStatesParams = db.getMap(Constants.USER_STATES_PARAMS_MAPDB_KEY);
     AtomicLong id = (AtomicLong) db.getVar("InlineQueryId").get();
     inlineQueryId = Objects.requireNonNullElseGet(id, () -> new AtomicLong(10));
     log.info("Starting bot");
@@ -576,6 +581,25 @@ public class MeetupCalendarBot extends AbilityBot {
         .build();
   }
 
+  public Ability updateEvent() {
+    return Ability
+        .builder()
+        .name("update_event")
+        .info("update_event")
+        .locality(USER)
+        .privacy(CREATOR)
+        .action(ctx -> {
+          var chatId = ctx.chatId();
+          var event = eventsRepository.findById(Long.valueOf(ctx.firstArg())).orElseThrow();
+          actionsExecutor.sendMessage(chatId, "Old event info:");
+          actionsExecutor.sendMessage(chatId, event.toMessageText());
+          actionsExecutor.sendMessage(chatId, "Please send updated event info:");
+          userStates.put(chatId, UserState.WAITING_EVENT_UPDATE);
+          userStatesParams.put(chatId, ctx.firstArg());
+        })
+        .build();
+  }
+
   @SneakyThrows
   public void newEvent(MessageContext ctx) {
     var chatId = ctx.chatId();
@@ -608,6 +632,38 @@ public class MeetupCalendarBot extends AbilityBot {
         actionsExecutor.sendMessage(chatId, "All users were notified");
         scheduleNotifications(savedEvent);
         actionsExecutor.sendMessage(chatId, "And notifications scheduled");
+      } else if (Objects.requireNonNull(userStates.get(chatId)) == UserState.WAITING_EVENT_UPDATE) {
+        var oldEvent = eventsRepository.findById(Long.valueOf(userStatesParams.get(chatId))).orElseThrow();
+        var updatedEvent = Event.fromMessageText(messageText);
+        if (!ObjectUtils.allNotNull(updatedEvent.getName(), updatedEvent.getEventTime(), updatedEvent.getDescription(), updatedEvent.getLink())) {
+          actionsExecutor.sendMessage(chatId, "Can't parse message, please correct");
+          return;
+        }
+        var updatedFields = new ArrayList<String>();
+        if (!Objects.equals(oldEvent.getName(), updatedEvent.getName())) {
+          updatedFields.add("Name");
+          oldEvent.setName(updatedEvent.getName());
+        }
+        if (!Objects.equals(oldEvent.getEventTime(), updatedEvent.getEventTime())) {
+          updatedFields.add("Time");
+          oldEvent.setEventTime(updatedEvent.getEventTime());
+        }
+        if (!Objects.equals(oldEvent.getDescription(), updatedEvent.getDescription())) {
+          updatedFields.add("Description");
+          oldEvent.setDescription(updatedEvent.getDescription());
+        }
+        if (!Objects.equals(oldEvent.getLink(), updatedEvent.getLink())) {
+          updatedFields.add("Link");
+          oldEvent.setLink(updatedEvent.getLink());
+        }
+        if (!updatedFields.isEmpty()) {
+          var savedEvent = eventsRepository.save(oldEvent);
+          actionsExecutor.sendMessage(chatId, "Event was updated");
+          scheduleNotifications(savedEvent);
+          eventSubscriptionsRepository.findAllByEventIdAndSubscribed(savedEvent.getEventId(), true)
+              .forEach(sub -> actionsExecutor.sendMessage(sub.getUserId(), "ℹ️ %s event was updated.\nFollowing %s changed: %s\n\n%s"
+                  .formatted(savedEvent.getName(), updatedFields.size() == 1 ? "field was" : "fields were", String.join(", ", updatedFields), updatedEvent.toMessageText())));
+        }
       } else {
         actionsExecutor.sendMessage(chatId, "Sorry, can't understand, you can start again at any time - /start");
       }
@@ -817,14 +873,20 @@ public class MeetupCalendarBot extends AbilityBot {
   }
 
   private void scheduleNotifications(Event event) {
-    scheduleNotifications(event, event.getEventTime().minus(7, ChronoUnit.DAYS), User::getOneDayNotification, "There is an event in 1 week: %s".formatted(event.getName()));
-    scheduleNotifications(event, event.getEventTime().minus(1, ChronoUnit.DAYS), User::getOneDayNotification, "There is an event tomorrow: %s".formatted(event.getName()));
-    scheduleNotifications(event, event.getEventTime().minus(12, ChronoUnit.HOURS), User::getTwelveHoursNotification, "%s starts in 12 hours".formatted(event.getName()));
-    scheduleNotifications(event, event.getEventTime().minus(6, ChronoUnit.HOURS), User::getSixHoursNotification, "%s starts only in 6 hours!!!".formatted(event.getName()));
-    scheduleNotifications(event, event.getEventTime().minus(1, ChronoUnit.HOURS), User::getOneHourNotification, "%s starts only in 1 hour!!!".formatted(event.getName()));
+    if (eventSchedules.containsKey(event.getEventId())) {
+      eventSchedules.get(event.getEventId()).forEach(task -> task.cancel(true));
+    }
+    var scheduledTasks = Stream.of(
+        scheduleNotifications(event, event.getEventTime().minus(7, ChronoUnit.DAYS), User::getOneDayNotification, "There is an event in 1 week: %s".formatted(event.getName())),
+        scheduleNotifications(event, event.getEventTime().minus(1, ChronoUnit.DAYS), User::getOneDayNotification, "There is an event tomorrow: %s".formatted(event.getName())),
+        scheduleNotifications(event, event.getEventTime().minus(12, ChronoUnit.HOURS), User::getTwelveHoursNotification, "%s starts in 12 hours".formatted(event.getName())),
+        scheduleNotifications(event, event.getEventTime().minus(6, ChronoUnit.HOURS), User::getSixHoursNotification, "%s starts only in 6 hours!!!".formatted(event.getName())),
+        scheduleNotifications(event, event.getEventTime().minus(1, ChronoUnit.HOURS), User::getOneHourNotification, "%s starts only in 1 hour!!!".formatted(event.getName()))
+    ).filter(Objects::nonNull).toList();
+    eventSchedules.put(event.getEventId(), scheduledTasks);
   }
 
-  private void scheduleNotifications(Event event, Instant time, Predicate<User> predicate, String notificationText) {
+  private ScheduledFuture<?> scheduleNotifications(Event event, Instant time, Predicate<User> predicate, String notificationText) {
     if (time.isAfter(Instant.now())) {
       log.info("Scheduling notifications for {} at {}", event.getName(), time);
       Runnable task = () -> {
@@ -843,9 +905,11 @@ public class MeetupCalendarBot extends AbilityBot {
                     .formatted(notificationText, event.toMessageText()),
                 ActionsExecutor.ParseMode.MARKDOWN));
       };
-      taskScheduler.schedule(task, time);
+      var scheduledTask = taskScheduler.schedule(task, time);
       log.info("Notifications for {} were successfully scheduled", event.getName());
+      return scheduledTask;
     }
+    return null;
   }
 
   private Set<Long> getUsersForNotification(Long eventId, Predicate<User> isSubscribedToNotification) {
