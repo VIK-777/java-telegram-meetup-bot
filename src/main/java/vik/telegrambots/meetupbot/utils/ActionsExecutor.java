@@ -4,8 +4,10 @@ import static org.telegram.telegrambots.abilitybots.api.util.AbilityUtils.getCha
 import static vik.telegrambots.meetupbot.utils.KeyboardFactory.emptyKeyboard;
 
 import java.util.List;
+import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.methods.AnswerInlineQuery;
 import org.telegram.telegrambots.meta.api.methods.GetMe;
 import org.telegram.telegrambots.meta.api.methods.send.SendAnimation;
@@ -23,13 +25,11 @@ import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import org.telegram.telegrambots.meta.generics.TelegramClient;
 
 @Slf4j
+@Component
+@RequiredArgsConstructor
 public class ActionsExecutor {
 
     private final TelegramClient tgClient;
-
-    public ActionsExecutor(TelegramClient tgClient) {
-        this.tgClient = tgClient;
-    }
 
     @SneakyThrows
     public User getBotInfo() {

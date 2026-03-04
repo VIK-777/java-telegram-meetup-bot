@@ -3,15 +3,23 @@ package vik.telegrambots.meetupbot.conf;
 import static org.telegram.telegrambots.abilitybots.api.db.MapDBContext.onlineInstance;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.telegram.telegrambots.abilitybots.api.db.DBContext;
+import org.telegram.telegrambots.client.okhttp.OkHttpTelegramClient;
+import org.telegram.telegrambots.meta.generics.TelegramClient;
 
 @Configuration
 public class AppConfiguration {
+
+    @Bean
+    public TelegramClient telegramClient(@Value("${bot.token}") String botToken) {
+        return new OkHttpTelegramClient(botToken);
+    }
 
     @Bean
     public DBContext db(Environment env) {

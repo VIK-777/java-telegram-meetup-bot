@@ -86,9 +86,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
-import org.springframework.core.env.Environment;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.stereotype.Component;
@@ -103,7 +104,6 @@ import org.telegram.telegrambots.abilitybots.api.toggle.AbilityToggle;
 import org.telegram.telegrambots.abilitybots.api.toggle.CustomToggle;
 import org.telegram.telegrambots.abilitybots.api.util.AbilityUtils;
 import org.telegram.telegrambots.abilitybots.api.util.Pair;
-import org.telegram.telegrambots.client.okhttp.OkHttpTelegramClient;
 import org.telegram.telegrambots.longpolling.interfaces.LongPollingUpdateConsumer;
 import org.telegram.telegrambots.longpolling.starter.SpringLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.AnswerInlineQuery;
@@ -111,6 +111,7 @@ import org.telegram.telegrambots.meta.api.objects.InputFile;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.inlinequery.inputmessagecontent.InputTextMessageContent;
 import org.telegram.telegrambots.meta.api.objects.inlinequery.result.InlineQueryResultArticle;
+import org.telegram.telegrambots.meta.generics.TelegramClient;
 import vik.telegrambots.meetupbot.dao.jparepository.EventSubscriptionsJpaRepository;
 import vik.telegrambots.meetupbot.dao.jparepository.EventsJpaRepository;
 import vik.telegrambots.meetupbot.dao.jparepository.UpdatesJpaRepository;
@@ -126,6 +127,7 @@ import vik.telegrambots.meetupbot.utils.Utils;
 
 @Slf4j
 @Component
+@ConditionalOnProperty(name = "bot.enabled", havingValue = "true", matchIfMissing = true)
 public class MeetupCalendarBot extends AbilityBot implements SpringLongPollingBot {
 
   private final Map<Long, UserState> userStates;
@@ -133,9 +135,12 @@ public class MeetupCalendarBot extends AbilityBot implements SpringLongPollingBo
   private final Map<Long, List<ScheduledFuture<?>>> eventSchedules = new HashMap<>();
   private final AtomicLong inlineQueryId;
 
-  private final long creatorId;
-  private final String botToken;
-  private final ActionsExecutor actionsExecutor;
+  @Value("${bot.creator-id}")
+  private long creatorId;
+  @Value("${bot.token}")
+  private String botToken;
+  @Autowired
+  private ActionsExecutor actionsExecutor;
   @Autowired
   private ObjectMapper objectMapper;
   @Autowired
@@ -150,13 +155,12 @@ public class MeetupCalendarBot extends AbilityBot implements SpringLongPollingBo
   private TaskScheduler taskScheduler;
 
   @Autowired
-  public MeetupCalendarBot(Environment env, DBContext db) {
-    var botToken = Objects.requireNonNull(env.getProperty("bot.token"));
-    var tgClient = new OkHttpTelegramClient(botToken);
-    super(tgClient, env.getProperty("bot.name"), db, getBotToggle());
-    creatorId = Long.parseLong(Objects.requireNonNull(env.getProperty("bot.creator-id")));
-    this.botToken = botToken;
-    actionsExecutor = new ActionsExecutor(tgClient);
+  public MeetupCalendarBot(
+      @Value("${bot.name}") String botName,
+      DBContext db,
+      TelegramClient tgClient
+  ) {
+    super(tgClient, botName, db, getBotToggle());
     userStates = db.getMap(Constants.USER_STATES_MAPDB_KEY);
     userStatesParams = db.getMap(Constants.USER_STATES_PARAMS_MAPDB_KEY);
     AtomicLong id = (AtomicLong) db.getVar("InlineQueryId").get();
