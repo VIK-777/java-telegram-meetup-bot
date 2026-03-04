@@ -1,16 +1,16 @@
 plugins {
 	java
 	idea
-	id("org.springframework.boot") version "3.2.5"
-	id("io.spring.dependency-management") version "1.1.4"
+	id("org.springframework.boot") version "4.0.3"
+	id("io.spring.dependency-management") version "1.1.7"
 }
 
 group = "vik.telegrambots"
 version = "0.0.1-SNAPSHOT"
 
 java {
-	sourceCompatibility = JavaVersion.VERSION_21
-	targetCompatibility = JavaVersion.VERSION_21
+	sourceCompatibility = JavaVersion.VERSION_25
+	targetCompatibility = JavaVersion.VERSION_25
 }
 
 idea {
@@ -39,13 +39,14 @@ dependencies {
 	runtimeOnly("com.h2database:h2")
 	annotationProcessor("org.projectlombok:lombok")
 	testImplementation("org.springframework.boot:spring-boot-starter-test")
-	implementation("org.telegram:telegrambots-spring-boot-starter:6.9.7.1")
-	implementation("org.telegram:telegrambots-abilities:6.9.7.1")
+	implementation("org.telegram:telegrambots-springboot-longpolling-starter:9.4.0")
+	implementation("org.telegram:telegrambots-abilities:9.4.0")
+	implementation("org.telegram:telegrambots-client:9.4.0")
 	implementation("org.apache.commons:commons-collections4:4.4")
-	implementation("javax.xml.bind:jaxb-api:2.4.0-b180830.0359")
-	implementation("com.github.ulisesbocchio:jasypt-spring-boot-starter:3.0.5")
+	implementation("jakarta.xml.bind:jakarta.xml.bind-api:4.0.2")
+	implementation("com.github.ulisesbocchio:jasypt-spring-boot-starter:4.0.4")
 	implementation("org.postgresql:postgresql")
-	implementation("com.github.gavlyukovskiy:datasource-proxy-spring-boot-starter:1.9.1")
+	implementation("com.github.gavlyukovskiy:datasource-proxy-spring-boot-starter:2.0.0")
 }
 
 tasks.withType<Test> {

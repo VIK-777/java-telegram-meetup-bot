@@ -1,9 +1,11 @@
 package vik.telegrambots.meetupbot.utils;
 
+import static org.telegram.telegrambots.abilitybots.api.util.AbilityUtils.getChatId;
+import static vik.telegrambots.meetupbot.utils.KeyboardFactory.emptyKeyboard;
+
+import java.util.List;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.telegram.abilitybots.api.bot.AbilityBot;
-import org.telegram.abilitybots.api.sender.MessageSender;
 import org.telegram.telegrambots.meta.api.methods.AnswerInlineQuery;
 import org.telegram.telegrambots.meta.api.methods.GetMe;
 import org.telegram.telegrambots.meta.api.methods.send.SendAnimation;
@@ -12,32 +14,26 @@ import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
 import org.telegram.telegrambots.meta.api.objects.InputFile;
 import org.telegram.telegrambots.meta.api.objects.LinkPreviewOptions;
-import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.User;
+import org.telegram.telegrambots.meta.api.objects.message.Message;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboard;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
-
-import java.util.List;
-
-import static org.telegram.abilitybots.api.util.AbilityUtils.getChatId;
-import static vik.telegrambots.meetupbot.utils.KeyboardFactory.emptyKeyboard;
+import org.telegram.telegrambots.meta.generics.TelegramClient;
 
 @Slf4j
 public class ActionsExecutor {
 
-    private final AbilityBot abilityBot;
-    private final MessageSender sender;
+    private final TelegramClient tgClient;
 
-    public ActionsExecutor(AbilityBot abilityBot) {
-        this.abilityBot = abilityBot;
-        this.sender = abilityBot.sender();
+    public ActionsExecutor(TelegramClient tgClient) {
+        this.tgClient = tgClient;
     }
 
     @SneakyThrows
     public User getBotInfo() {
-        return sender.execute(new GetMe());
+        return tgClient.execute(new GetMe());
     }
 
     public Message sendMessage(Long chatId, String messageText) {
@@ -86,7 +82,7 @@ public class ActionsExecutor {
 
     public void updateMessageText(Long chatId, Integer messageId, String text, InlineKeyboardMarkup inlineKeyboardMarkup, LinkPreviewOptions linkPreviewOptions, ParseMode parseMode) {
         try {
-            sender.execute(EditMessageText.builder()
+            tgClient.execute(EditMessageText.builder()
                     .chatId(chatId)
                     .messageId(messageId)
                     .text(text)
@@ -109,7 +105,7 @@ public class ActionsExecutor {
                 .parseMode(parseMode.getAsString())
                 .build();
         try {
-            return sender.execute(message);
+            return tgClient.execute(message);
         } catch (TelegramApiException e) {
             log.error("Can't send message to chat {}, text: {}", chatId, messageText, e);
             return null;
@@ -123,7 +119,7 @@ public class ActionsExecutor {
                 .replyMarkup(emptyKeyboard())
                 .build();
         try {
-            sender.sendDocument(sendDocument);
+            tgClient.execute(sendDocument);
         } catch (TelegramApiException e) {
             log.error("Can't send file {} to chat {}", inputFile.getMediaName(), chatId, e);
         }
@@ -137,7 +133,7 @@ public class ActionsExecutor {
                 .parseMode(ParseMode.HTML.getAsString())
                 .build();
         try {
-            abilityBot.execute(sendAnimation);
+            tgClient.execute(sendAnimation);
         } catch (TelegramApiException e) {
             log.error("Can't send video {} to chat {}", inputFile.getMediaName(), chatId, e);
         }
@@ -145,7 +141,7 @@ public class ActionsExecutor {
 
     public void sendInlineQueryResult(AnswerInlineQuery inlineQueryResult) {
         try {
-            sender.execute(inlineQueryResult);
+            tgClient.execute(inlineQueryResult);
         } catch (TelegramApiException e) {
             log.error("Can't send inlineQueryResult: {}", inlineQueryResult, e);
         }

@@ -1,13 +1,13 @@
 package vik.telegrambots.meetupbot;
 
-import static org.telegram.abilitybots.api.objects.Locality.USER;
-import static org.telegram.abilitybots.api.objects.Privacy.ADMIN;
-import static org.telegram.abilitybots.api.objects.Privacy.CREATOR;
-import static org.telegram.abilitybots.api.objects.Privacy.PUBLIC;
-import static org.telegram.abilitybots.api.util.AbilityUtils.addTag;
-import static org.telegram.abilitybots.api.util.AbilityUtils.fullName;
-import static org.telegram.abilitybots.api.util.AbilityUtils.getChatId;
-import static org.telegram.abilitybots.api.util.AbilityUtils.getUser;
+import static org.telegram.telegrambots.abilitybots.api.objects.Locality.USER;
+import static org.telegram.telegrambots.abilitybots.api.objects.Privacy.ADMIN;
+import static org.telegram.telegrambots.abilitybots.api.objects.Privacy.CREATOR;
+import static org.telegram.telegrambots.abilitybots.api.objects.Privacy.PUBLIC;
+import static org.telegram.telegrambots.abilitybots.api.util.AbilityUtils.addTag;
+import static org.telegram.telegrambots.abilitybots.api.util.AbilityUtils.fullName;
+import static org.telegram.telegrambots.abilitybots.api.util.AbilityUtils.getChatId;
+import static org.telegram.telegrambots.abilitybots.api.util.AbilityUtils.getUser;
 import static vik.telegrambots.meetupbot.utils.Constants.BLUE_DOT_EMOJI;
 import static vik.telegrambots.meetupbot.utils.Constants.BOT_COMMANDS_MESSAGE;
 import static vik.telegrambots.meetupbot.utils.Constants.BOT_FULL_INFO_MESSAGE;
@@ -92,18 +92,20 @@ import org.springframework.core.env.Environment;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.stereotype.Component;
-import org.telegram.abilitybots.api.bot.AbilityBot;
-import org.telegram.abilitybots.api.bot.BaseAbilityBot;
-import org.telegram.abilitybots.api.db.DBContext;
-import org.telegram.abilitybots.api.objects.Ability;
-import org.telegram.abilitybots.api.objects.Flag;
-import org.telegram.abilitybots.api.objects.MessageContext;
-import org.telegram.abilitybots.api.objects.Reply;
-import org.telegram.abilitybots.api.toggle.AbilityToggle;
-import org.telegram.abilitybots.api.toggle.CustomToggle;
-import org.telegram.abilitybots.api.util.AbilityUtils;
-import org.telegram.abilitybots.api.util.Pair;
-import org.telegram.telegrambots.bots.DefaultBotOptions;
+import org.telegram.telegrambots.abilitybots.api.bot.AbilityBot;
+import org.telegram.telegrambots.abilitybots.api.bot.BaseAbilityBot;
+import org.telegram.telegrambots.abilitybots.api.db.DBContext;
+import org.telegram.telegrambots.abilitybots.api.objects.Ability;
+import org.telegram.telegrambots.abilitybots.api.objects.Flag;
+import org.telegram.telegrambots.abilitybots.api.objects.MessageContext;
+import org.telegram.telegrambots.abilitybots.api.objects.Reply;
+import org.telegram.telegrambots.abilitybots.api.toggle.AbilityToggle;
+import org.telegram.telegrambots.abilitybots.api.toggle.CustomToggle;
+import org.telegram.telegrambots.abilitybots.api.util.AbilityUtils;
+import org.telegram.telegrambots.abilitybots.api.util.Pair;
+import org.telegram.telegrambots.client.okhttp.OkHttpTelegramClient;
+import org.telegram.telegrambots.longpolling.interfaces.LongPollingUpdateConsumer;
+import org.telegram.telegrambots.longpolling.starter.SpringLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.AnswerInlineQuery;
 import org.telegram.telegrambots.meta.api.objects.InputFile;
 import org.telegram.telegrambots.meta.api.objects.Update;
@@ -124,7 +126,7 @@ import vik.telegrambots.meetupbot.utils.Utils;
 
 @Slf4j
 @Component
-public class MeetupCalendarBot extends AbilityBot {
+public class MeetupCalendarBot extends AbilityBot implements SpringLongPollingBot {
 
   private final Map<Long, UserState> userStates;
   private final Map<Long, String> userStatesParams;
@@ -132,6 +134,7 @@ public class MeetupCalendarBot extends AbilityBot {
   private final AtomicLong inlineQueryId;
 
   private final long creatorId;
+  private final String botToken;
   private final ActionsExecutor actionsExecutor;
   @Autowired
   private ObjectMapper objectMapper;
@@ -148,36 +151,17 @@ public class MeetupCalendarBot extends AbilityBot {
 
   @Autowired
   public MeetupCalendarBot(Environment env, DBContext db) {
-    super(env.getProperty("bot.token"), env.getProperty("bot.name"), db, getBotToggle(), getBotOptions());
+    var botToken = Objects.requireNonNull(env.getProperty("bot.token"));
+    var tgClient = new OkHttpTelegramClient(botToken);
+    super(tgClient, env.getProperty("bot.name"), db, getBotToggle());
     creatorId = Long.parseLong(Objects.requireNonNull(env.getProperty("bot.creator-id")));
-    actionsExecutor = new ActionsExecutor(this);
+    this.botToken = botToken;
+    actionsExecutor = new ActionsExecutor(tgClient);
     userStates = db.getMap(Constants.USER_STATES_MAPDB_KEY);
     userStatesParams = db.getMap(Constants.USER_STATES_PARAMS_MAPDB_KEY);
     AtomicLong id = (AtomicLong) db.getVar("InlineQueryId").get();
     inlineQueryId = Objects.requireNonNullElseGet(id, () -> new AtomicLong(10));
     log.info("Starting bot");
-  }
-
-  private static DefaultBotOptions getBotOptions() {
-    var options = new DefaultBotOptions();
-    var allowedUpdates = List.of(
-        "update_id",
-        "message",
-        "inline_query",
-        "chosen_inline_result",
-        "callback_query",
-        "edited_message",
-        "channel_post",
-        "edited_channel_post",
-        "shipping_query",
-        "pre_checkout_query",
-        "poll",
-        "poll_answer",
-        "my_chat_member",
-        "chat_member",
-        "chat_join_request");
-    options.setAllowedUpdates(allowedUpdates);
-    return options;
   }
 
   private static AbilityToggle getBotToggle() {
@@ -195,6 +179,7 @@ public class MeetupCalendarBot extends AbilityBot {
 
   @PostConstruct
   public void initialize() {
+    this.onRegister();
     eventsRepository.findUpcomingEvents().forEach(this::scheduleNotifications);
   }
 
@@ -204,11 +189,16 @@ public class MeetupCalendarBot extends AbilityBot {
   }
 
   @Override
-  public void onUpdateReceived(Update update) {
+  public void consume(List<Update> updates) {
+    super.consume(updates);
+  }
+
+  @Override
+  public void consume(Update update) {
     Stream.of(update)
         .peek(this::saveUpdateToDatabase)
         .peek(this::saveUserToDatabase)
-        .forEach(super::onUpdateReceived);
+        .forEach(super::consume);
   }
 
   private void saveUpdateToDatabase(Update update) {
@@ -446,7 +436,6 @@ public class MeetupCalendarBot extends AbilityBot {
         .privacy(CREATOR)
         .action(ctx -> {
           var chatId = ctx.chatId();
-          var objectMapper = new ObjectMapper().findAndRegisterModules();
           var folder = new File(ctx.firstArg());
           try {
             usersRepository.deleteAll();
@@ -925,5 +914,15 @@ public class MeetupCalendarBot extends AbilityBot {
   @EventListener(ApplicationReadyEvent.class)
   private void notifyOnBotStart() {
     actionsExecutor.sendMessage(creatorId(), "Bot started");
+  }
+
+  @Override
+  public String getBotToken() {
+    return this.botToken;
+  }
+
+  @Override
+  public LongPollingUpdateConsumer getUpdatesConsumer() {
+    return this;
   }
 }
