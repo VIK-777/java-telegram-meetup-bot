@@ -65,10 +65,10 @@ public class Constants {
                     + LINK_STARTS_WITH + "%s";
     public static String NEW_EVENT_MESSAGE = "Please send event in following format:\n" + EVENT_TEMPLATE_SIMPLE.formatted("", "yyyy-MM-dd HH:MM", "", "");
     public static final String EVENT_TEMPLATE =
-            EVENT_NAME_EMOJI_HTML_STRING + NAME_STARTS_WITH + "%s\n"
-                    + TIME_EMOJI_HTML_STRING + TIME_STARTS_WITH + "%s\n"
-                    + DESCRIPTION_EMOJI_HTML_STRING + DESCRIPTION_STARTS_WITH + "%s\n"
-                    + LINK_EMOJI_HTML_STRING + LINK_STARTS_WITH + "%s";
+            EVENT_NAME_EMOJI_HTML_STRING + "<b>" + NAME_STARTS_WITH + "</b>%s\n"
+                    + TIME_EMOJI_HTML_STRING + "<b>" + TIME_STARTS_WITH + "</b>%s\n"
+                    + DESCRIPTION_EMOJI_HTML_STRING + "<b>" + DESCRIPTION_STARTS_WITH + "</b>%s\n"
+                    + LINK_EMOJI_HTML_STRING + "<b>" + LINK_STARTS_WITH + "</b>%s";
     public static final String IM_DONE_BUTTON_TEXT = FLOPPY_DISK_EMOJI + "I'm done";
     public static final String NOTIFICATIONS_SETTINGS_TEXT = "Tick which notifications you want to receive and then click \"" + IM_DONE_BUTTON_TEXT + "\"";
     public static final String FEATURE_INLINE_QUERY_MESSAGE = NEW_EMOJI + """

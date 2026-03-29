@@ -505,12 +505,12 @@ public class MeetupCalendarBot extends AbilityBot implements SpringLongPollingBo
     var buttons = eventsRepository.findUpcomingEvents().stream()
         .map(event -> {
           var isSubscribed = userSubscriptions.getOrDefault(event.getEventId(), false);
-          var text = "<b>" + event.getName() + "</b>\n" + Utils.writeDateTime(event.getEventTime());
-          var textForButton = Utils.writeDateTime(event.getEventTime()) + ": " + event.getName();
-          sb.append("\n").append("\uD83D\uDDD3 ").append(text);
+          var text = "<b>" + event.getName() + "</b>\n" + Utils.writeDateTimeHumanReadable(event.getEventTime());
+          var textForButton = Utils.writeDateTimeHumanReadable(event.getEventTime()) + ": " + event.getName();
+          sb.append("\n").append("\uD83D\uDDD3 ").append(text).append("\n");
           return new ButtonInfo(textForButton, OPEN_EVENT_INFORMATION + " " + event.getEventId(), isSubscribed ? GREEN : BLUE);
         }).toList();
-    sb.append("\n\n\uD83D\uDC47 <b>Click on any button below</b>\nto get more information and subscribe/unsubscribe to notifications");
+    sb.append("\n\uD83D\uDC47 <b>Click on any button below</b>\nto get more information and subscribe/unsubscribe to notifications");
     sb.append("\n\n" + GREEN_DOT_EMOJI + "- subscribed");
     sb.append("\n" + BLUE_DOT_EMOJI + "- not subscribed");
     return new MessageInfo(sb.toString(), buttons);
@@ -625,8 +625,8 @@ public class MeetupCalendarBot extends AbilityBot implements SpringLongPollingBo
         log.info("Saved event: {}", savedEvent);
         actionsExecutor.sendMessage(chatId, "New event was saved");
         var buttons = List.of(
-            new ButtonInfo("Send me notifications", SUBSCRIBE_TO_EVENT + " " + savedEvent.getEventId(), GREEN),
-            new ButtonInfo("I'll skip this one", UNSUBSCRIBE_FROM_EVENT + " " + savedEvent.getEventId(), RED)
+            new ButtonInfo("Send me notifications", SUBSCRIBE_TO_EVENT + " " + savedEvent.getEventId(), CHECK_MARK_EMOJI.id(), GREEN),
+            new ButtonInfo("I'll skip this one", UNSUBSCRIBE_FROM_EVENT + " " + savedEvent.getEventId(), CROSS_MARK_EMOJI.id(), RED)
         );
         getAllSubscribedUsers().forEach(id -> {
           var result = actionsExecutor.sendMessage(id, savedEvent.toMessageText(), getInlineGrid(buttons, 1), ActionsExecutor.ParseMode.HTML);
