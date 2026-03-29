@@ -494,23 +494,24 @@ public class MeetupCalendarBot extends AbilityBot implements SpringLongPollingBo
             actionsExecutor.sendMessage(chatId, NO_UPCOMING_EVENTS);
             return;
           }
-          actionsExecutor.sendMessage(chatId, messageAndButtons.messageText(), getInlineGrid(messageAndButtons.buttons(), 1));
+          actionsExecutor.sendMessage(chatId, messageAndButtons.messageText(), getInlineGrid(messageAndButtons.buttons(), 1), ParseMode.HTML);
         })
         .build();
   }
 
   private MessageInfo getMessageAndButtonsForUpcomingEvents(long userId) {
-    var sb = new StringBuilder("All upcoming events:");
+    var sb = new StringBuilder("\uD83D\uDCC5 <b>Upcoming Events</b>\n");
     var userSubscriptions = eventSubscriptionsRepository.findAllByUserIdAsMap(userId);
     var buttons = eventsRepository.findUpcomingEvents().stream()
         .map(event -> {
           var isSubscribed = userSubscriptions.getOrDefault(event.getEventId(), false);
-          var text = Utils.writeDateTime(event.getEventTime()) + ": " + event.getName();
-          sb.append("\n").append("• ").append(text);
-          return new ButtonInfo(text, OPEN_EVENT_INFORMATION + " " + event.getEventId(), isSubscribed ? GREEN : BLUE);
+          var text = "<b>" + event.getName() + "</b>\n" + Utils.writeDateTime(event.getEventTime());
+          var textForButton = Utils.writeDateTime(event.getEventTime()) + ": " + event.getName();
+          sb.append("\n").append("\uD83D\uDDD3 ").append(text);
+          return new ButtonInfo(textForButton, OPEN_EVENT_INFORMATION + " " + event.getEventId(), isSubscribed ? GREEN : BLUE);
         }).toList();
-    sb.append("\n\nClick on any button below to get more information and subscribe/unsubscribe to notifications");
-    sb.append("\n" + GREEN_DOT_EMOJI + "- subscribed");
+    sb.append("\n\n\uD83D\uDC47 <b>Click on any button below</b>\nto get more information and subscribe/unsubscribe to notifications");
+    sb.append("\n\n" + GREEN_DOT_EMOJI + "- subscribed");
     sb.append("\n" + BLUE_DOT_EMOJI + "- not subscribed");
     return new MessageInfo(sb.toString(), buttons);
   }
@@ -523,7 +524,7 @@ public class MeetupCalendarBot extends AbilityBot implements SpringLongPollingBo
         .locality(USER)
         .privacy(PUBLIC)
         .action(ctx -> actionsExecutor.sendMessage(ctx.chatId(), "Notification settings:\n" + NOTIFICATIONS_SETTINGS_TEXT,
-            getInlineGrid(getPairsForUser(ctx.chatId(), true), 1)))
+            getInlineGrid(getNotificationSettingsButtonsForUser(ctx.chatId(), true), 1)))
         .build();
   }
 
@@ -708,7 +709,7 @@ public class MeetupCalendarBot extends AbilityBot implements SpringLongPollingBo
     return Reply.of(action, Flag.INLINE_QUERY);
   }
 
-  private List<ButtonInfo> getPairsForUser(Long userId, boolean isFromSettings) {
+  private List<ButtonInfo> getNotificationSettingsButtonsForUser(Long userId, boolean isFromSettings) {
     List<ButtonInfo> notificationButtons = new ArrayList<>();
     usersRepository.findById(userId).ifPresent(user -> {
       notificationButtons.add(getButtonInfoForOption(userId, user.getSendInfoNotifications(), isFromSettings ? TOGGLE_INFO_NOTIFICATION_FROM_SETTINGS : TOGGLE_INFO_NOTIFICATION));
@@ -743,7 +744,7 @@ public class MeetupCalendarBot extends AbilityBot implements SpringLongPollingBo
             usersRepository.save(user);
           });
           actionsExecutor.updateMessageText(upd, "Thank you! Let's setup additional notifications.\n" + NOTIFICATIONS_SETTINGS_TEXT,
-              getInlineGrid(getPairsForUser(chatId, false), 1));
+              getInlineGrid(getNotificationSettingsButtonsForUser(chatId, false), 1));
         }
         case SUBSCRIBE_TO_EVENT, SUBSCRIBE_TO_EVENT_FROM_UPCOMING_EVENTS -> {
           var eventId = Long.parseLong(parts[1]);
@@ -815,7 +816,7 @@ public class MeetupCalendarBot extends AbilityBot implements SpringLongPollingBo
             actionsExecutor.updateMessageText(upd, NO_UPCOMING_EVENTS);
             return;
           }
-          actionsExecutor.updateMessageText(upd, messageInfo.messageText(), getInlineGrid(messageInfo.buttons(), 1));
+          actionsExecutor.updateMessageText(upd, messageInfo.messageText(), getInlineGrid(messageInfo.buttons(), 1), ParseMode.HTML);
         }
         default -> {
           if (callbackQueryAction.startsWith("TOGGLE")) {
@@ -827,7 +828,7 @@ public class MeetupCalendarBot extends AbilityBot implements SpringLongPollingBo
               toggleUserProperty(getterAndSetter.a(), getterAndSetter.b());
               usersRepository.save(user);
             });
-            actionsExecutor.updateMessageText(upd, getInlineGrid(getPairsForUser(userId, includeNewEventNotificationsFlag), 1));
+            actionsExecutor.updateMessageText(upd, getInlineGrid(getNotificationSettingsButtonsForUser(userId, includeNewEventNotificationsFlag), 1));
           }
         }
       }
