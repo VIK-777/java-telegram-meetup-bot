@@ -23,7 +23,8 @@ public class Constants {
     public static final String ENABLE_NEW_EVENT_NOTIFICATIONS = "ENABLE_NEW_EVENT_NOTIFICATIONS";
     public static final String DISABLE_NEW_EVENT_NOTIFICATIONS = "DISABLE_NEW_EVENT_NOTIFICATIONS";
     public static final String NAH_I_DONT_LIKE_SPAM = "Nah, I don't like spam";
-    public static final String RETURN_BACK_BUTTON = "Return back";
+    public static final CustomEmoji RETURN_BACK_EMOJI = new CustomEmoji("\uD83D\uDD19", "5352759161945867747");
+    public static final String RETURN_BACK_BUTTON = "Return";
     public static final String OPEN_UPCOMING_EVENTS = "OPEN_UPCOMING_EVENTS";
     public static final String USER_STATES_MAPDB_KEY = "userStates";
     public static final String USER_STATES_PARAMS_MAPDB_KEY = "userStatesParams";
@@ -34,12 +35,18 @@ public class Constants {
     public static final String IM_DONE_BUTTON = "IM_DONE_BUTTON";
     public static final String IM_DONE_BUTTON_FROM_SETTINGS = "IM_DONE_BUTTON_FROM_SETTINGS";
     public static final String OPEN_EVENT_INFORMATION = "OPEN_EVENT_INFORMATION";
-    public static final String EVENT_NAME_EMOJI = "\uD83C\uDF97\uFE0F ";
-    public static final String TIME_EMOJI = "⏰ ";
-    public static final String DESCRIPTION_EMOJI = "\uD83D\uDCD6 ";
-    public static final String LINK_EMOJI = "\uD83C\uDF0D ";
-    public static final String CHECK_MARK_EMOJI = "✅ ";
-    public static final String CROSS_MARK_EMOJI = "❌ ";
+    public static final CustomEmoji EVENT_NAME_EMOJI = new CustomEmoji("\uD83C\uDF97", "5454172415070315962");
+    public static final String EVENT_NAME_EMOJI_HTML_STRING = EVENT_NAME_EMOJI.toHtmlString() + " ";
+    public static final CustomEmoji TIME_EMOJI = new CustomEmoji("⏰", "5413704112220949842");
+    public static final String TIME_EMOJI_HTML_STRING = TIME_EMOJI.toHtmlString() + " ";
+    public static final CustomEmoji DESCRIPTION_EMOJI = new CustomEmoji("\uD83D\uDCD6", "5226512880362332956");
+    public static final String DESCRIPTION_EMOJI_HTML_STRING = DESCRIPTION_EMOJI.toHtmlString() + " ";
+    public static final CustomEmoji LINK_EMOJI = new CustomEmoji("\uD83C\uDF0D", "5399898266265475100");
+    public static final String LINK_EMOJI_HTML_STRING = LINK_EMOJI.toHtmlString() + " ";
+    public static final CustomEmoji CHECK_MARK_EMOJI = new CustomEmoji("✅", "5427009714745517609");
+    public static final String CHECK_MARK_EMOJI_HTML_STRING = CHECK_MARK_EMOJI.toHtmlString() + " ";
+    public static final CustomEmoji CROSS_MARK_EMOJI = new CustomEmoji("❌", "5465665476971471368");
+    public static final String CROSS_MARK_EMOJI_HTML_STRING = CROSS_MARK_EMOJI.toHtmlString() + " ";
     public static final String GREEN_DOT_EMOJI = "🟢 ";
     public static final String RED_DOT_EMOJI = "🔴 ";
     public static final String BLUE_DOT_EMOJI = "🔵 ";
@@ -58,10 +65,10 @@ public class Constants {
                     + LINK_STARTS_WITH + "%s";
     public static String NEW_EVENT_MESSAGE = "Please send event in following format:\n" + EVENT_TEMPLATE_SIMPLE.formatted("", "yyyy-MM-dd HH:MM", "", "");
     public static final String EVENT_TEMPLATE =
-            EVENT_NAME_EMOJI + NAME_STARTS_WITH + "%s\n"
-                    + TIME_EMOJI + TIME_STARTS_WITH + "%s\n"
-                    + DESCRIPTION_EMOJI + DESCRIPTION_STARTS_WITH + "%s\n"
-                    + LINK_EMOJI + LINK_STARTS_WITH + "%s";
+            EVENT_NAME_EMOJI_HTML_STRING + NAME_STARTS_WITH + "%s\n"
+                    + TIME_EMOJI_HTML_STRING + TIME_STARTS_WITH + "%s\n"
+                    + DESCRIPTION_EMOJI_HTML_STRING + DESCRIPTION_STARTS_WITH + "%s\n"
+                    + LINK_EMOJI_HTML_STRING + LINK_STARTS_WITH + "%s";
     public static final String IM_DONE_BUTTON_TEXT = FLOPPY_DISK_EMOJI + "I'm done";
     public static final String NOTIFICATIONS_SETTINGS_TEXT = "Tick which notifications you want to receive and then click \"" + IM_DONE_BUTTON_TEXT + "\"";
     public static final String FEATURE_INLINE_QUERY_MESSAGE = NEW_EMOJI + """
