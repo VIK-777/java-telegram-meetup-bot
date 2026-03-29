@@ -697,7 +697,7 @@ public class MeetupCalendarBot extends AbilityBot implements SpringLongPollingBo
               .title(event.getName())
               .description(Utils.writeDateTime(event.getEventTime()) + "\n" + event.getDescription())
               .inputMessageContent(InputTextMessageContent.builder()
-                  .messageText(event.toMessageText() + "\n\n" + EXCLAMATION_MARK_EMOJI + "More events in @meetup\\_calendar\\_bot")
+                  .messageText(event.toMessageText() + "\n\n" + EXCLAMATION_MARK_EMOJI + "More events in @meetup_calendar_bot")
                   .parseMode(ActionsExecutor.ParseMode.HTML.getAsString())
                   .build())
               .build()).toList())
