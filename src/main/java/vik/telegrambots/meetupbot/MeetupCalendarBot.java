@@ -838,8 +838,8 @@ public class MeetupCalendarBot extends AbilityBot implements SpringLongPollingBo
 
   private ButtonInfo getSubscriptionButton(Boolean isAlreadySubscribed, Long eventId, boolean fromUpcomingEvents) {
     return isAlreadySubscribed
-        ? new ButtonInfo("Unsubscribe", (fromUpcomingEvents ? UNSUBSCRIBE_FROM_EVENT_FROM_UPCOMING_EVENTS : UNSUBSCRIBE_FROM_EVENT) + " " + eventId, RED)
-        : new ButtonInfo("Subscribe", (fromUpcomingEvents ? SUBSCRIBE_TO_EVENT_FROM_UPCOMING_EVENTS : SUBSCRIBE_TO_EVENT) + " " + eventId, GREEN);
+        ? new ButtonInfo("Unsubscribe", (fromUpcomingEvents ? UNSUBSCRIBE_FROM_EVENT_FROM_UPCOMING_EVENTS : UNSUBSCRIBE_FROM_EVENT) + " " + eventId, CROSS_MARK_EMOJI.id(), RED)
+        : new ButtonInfo("Subscribe", (fromUpcomingEvents ? SUBSCRIBE_TO_EVENT_FROM_UPCOMING_EVENTS : SUBSCRIBE_TO_EVENT) + " " + eventId, CHECK_MARK_EMOJI.id(), GREEN);
   }
 
   private void toggleUserProperty(Consumer<Boolean> setter, Supplier<Boolean> getter) {
