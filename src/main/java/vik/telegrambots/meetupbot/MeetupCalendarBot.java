@@ -698,7 +698,7 @@ public class MeetupCalendarBot extends AbilityBot implements SpringLongPollingBo
               .title(event.getName())
               .description(Utils.writeDateTime(event.getEventTime()) + "\n" + event.getDescription())
               .inputMessageContent(InputTextMessageContent.builder()
-                  .messageText(event.toMessageText() + "\n\n" + EXCLAMATION_MARK_EMOJI + "More events in @meetup_calendar_bot")
+                  .messageText(event.toMessageText() + "\n\n──────────────\n" + EXCLAMATION_MARK_EMOJI + "More events in @meetup_calendar_bot")
                   .parseMode(ActionsExecutor.ParseMode.HTML.getAsString())
                   .build())
               .build()).toList())
@@ -762,7 +762,7 @@ public class MeetupCalendarBot extends AbilityBot implements SpringLongPollingBo
               buttons.add(new ButtonInfo(RETURN_BACK_BUTTON, OPEN_UPCOMING_EVENTS, RETURN_BACK_EMOJI));
             }
             actionsExecutor.updateMessageText(upd, event.toMessageText()
-                    + "\n\nYour choice was saved.\n"
+                    + "\n\n──────────────\nYour choice was saved.\n"
                     + CHECK_MARK_EMOJI_HTML_STRING + "You're now receiving notifications for this event",
                 getInlineGrid(buttons, 1),
                 ActionsExecutor.ParseMode.HTML);
@@ -784,7 +784,7 @@ public class MeetupCalendarBot extends AbilityBot implements SpringLongPollingBo
               buttons.add(new ButtonInfo(RETURN_BACK_BUTTON, OPEN_UPCOMING_EVENTS, RETURN_BACK_EMOJI));
             }
             actionsExecutor.updateMessageText(upd, event.toMessageText()
-                    + "\n\nYour choice was saved.\n"
+                    + "\n\n──────────────\nYour choice was saved.\n"
                     + CROSS_MARK_EMOJI_HTML_STRING + "You're no longer receiving notifications for this event",
                 getInlineGrid(buttons, 1),
                 ActionsExecutor.ParseMode.HTML);
@@ -802,7 +802,7 @@ public class MeetupCalendarBot extends AbilityBot implements SpringLongPollingBo
                 .map(EventSubscription::getSubscribed)
                 .orElse(false);
             actionsExecutor.updateMessageText(upd, event.toMessageText()
-                    + "\n\n" + (subscribed
+                    + "\n\n──────────────\n" + (subscribed
                     ? CHECK_MARK_EMOJI_HTML_STRING + "You're receiving notifications for this event"
                     : CROSS_MARK_EMOJI_HTML_STRING + "You're not receiving notifications for this event"),
                 getInlineGrid(List.of(getSubscriptionButton(subscribed, eventId, true),
@@ -882,11 +882,11 @@ public class MeetupCalendarBot extends AbilityBot implements SpringLongPollingBo
       eventSchedules.get(event.getEventId()).forEach(task -> task.cancel(true));
     }
     var scheduledTasks = Stream.of(
-        scheduleNotifications(event, event.getEventTime().minus(7, ChronoUnit.DAYS), User::getOneDayNotification, "There is an event in 1 week: %s".formatted(event.getName())),
-        scheduleNotifications(event, event.getEventTime().minus(1, ChronoUnit.DAYS), User::getOneDayNotification, "There is an event tomorrow: %s".formatted(event.getName())),
-        scheduleNotifications(event, event.getEventTime().minus(12, ChronoUnit.HOURS), User::getTwelveHoursNotification, "%s starts in 12 hours".formatted(event.getName())),
-        scheduleNotifications(event, event.getEventTime().minus(6, ChronoUnit.HOURS), User::getSixHoursNotification, "%s starts only in 6 hours!!!".formatted(event.getName())),
-        scheduleNotifications(event, event.getEventTime().minus(1, ChronoUnit.HOURS), User::getOneHourNotification, "%s starts only in 1 hour!!!".formatted(event.getName()))
+        scheduleNotifications(event, event.getEventTime().minus(7, ChronoUnit.DAYS), User::getOneDayNotification, "There is an event in <b>1 week</b>: %s".formatted(event.getName())),
+        scheduleNotifications(event, event.getEventTime().minus(1, ChronoUnit.DAYS), User::getOneDayNotification, "There is an event <b>tomorrow</b>: %s".formatted(event.getName())),
+        scheduleNotifications(event, event.getEventTime().minus(12, ChronoUnit.HOURS), User::getTwelveHoursNotification, "%s starts in <b>12 hours</b>".formatted(event.getName())),
+        scheduleNotifications(event, event.getEventTime().minus(6, ChronoUnit.HOURS), User::getSixHoursNotification, "%s starts only in <b>6 hours</b>!!!".formatted(event.getName())),
+        scheduleNotifications(event, event.getEventTime().minus(1, ChronoUnit.HOURS), User::getOneHourNotification, "%s starts only in <b>1 hour</b>!!!".formatted(event.getName()))
     ).filter(Objects::nonNull).toList();
     eventSchedules.put(event.getEventId(), scheduledTasks);
   }
@@ -904,7 +904,7 @@ public class MeetupCalendarBot extends AbilityBot implements SpringLongPollingBo
                 """
                     %s
                     
-                    Full info:
+                    <b>Full info:</b>
                     %s
                     """
                     .formatted(notificationText, event.toMessageText()),

@@ -41,7 +41,7 @@ public class Constants {
     public static final String TIME_EMOJI_HTML_STRING = TIME_EMOJI.toHtmlString() + " ";
     public static final CustomEmoji DESCRIPTION_EMOJI = new CustomEmoji("\uD83D\uDCD6", "5226512880362332956");
     public static final String DESCRIPTION_EMOJI_HTML_STRING = DESCRIPTION_EMOJI.toHtmlString() + " ";
-    public static final CustomEmoji LINK_EMOJI = new CustomEmoji("\uD83C\uDF0D", "5399898266265475100");
+    public static final CustomEmoji LINK_EMOJI = new CustomEmoji("\uD83D\uDD17", "5375129357373165375");
     public static final String LINK_EMOJI_HTML_STRING = LINK_EMOJI.toHtmlString() + " ";
     public static final CustomEmoji CHECK_MARK_EMOJI = new CustomEmoji("✅", "5427009714745517609");
     public static final String CHECK_MARK_EMOJI_HTML_STRING = CHECK_MARK_EMOJI.toHtmlString() + " ";
@@ -64,11 +64,13 @@ public class Constants {
                     + DESCRIPTION_STARTS_WITH + "%s\n"
                     + LINK_STARTS_WITH + "%s";
     public static String NEW_EVENT_MESSAGE = "Please send event in following format:\n" + EVENT_TEMPLATE_SIMPLE.formatted("", "yyyy-MM-dd HH:MM", "", "");
-    public static final String EVENT_TEMPLATE =
-            EVENT_NAME_EMOJI_HTML_STRING + "<b>" + NAME_STARTS_WITH + "</b>%s\n"
-                    + TIME_EMOJI_HTML_STRING + "<b>" + TIME_STARTS_WITH + "</b>%s\n"
-                    + DESCRIPTION_EMOJI_HTML_STRING + "<b>" + DESCRIPTION_STARTS_WITH + "</b>%s\n"
-                    + LINK_EMOJI_HTML_STRING + "<b>" + LINK_STARTS_WITH + "</b>%s";
+    public static final String EVENT_TEMPLATE = """
+        %s<b>%s</b>
+        
+        %s%s
+        %s
+        
+        %s<a href="%s">Open event page</a>""".formatted(EVENT_NAME_EMOJI_HTML_STRING, "%s", TIME_EMOJI_HTML_STRING, "%s", "%s", LINK_EMOJI_HTML_STRING, "%s");
     public static final String IM_DONE_BUTTON_TEXT = FLOPPY_DISK_EMOJI + "I'm done";
     public static final String NOTIFICATIONS_SETTINGS_TEXT = "Tick which notifications you want to receive and then click \"" + IM_DONE_BUTTON_TEXT + "\"";
     public static final String FEATURE_INLINE_QUERY_MESSAGE = NEW_EMOJI + """
