@@ -1,4 +1,4 @@
-package vik.telegrambots.meetupbot;
+package vik.telegrambots.meetupbot.parser;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -16,12 +16,13 @@ import vik.telegrambots.meetupbot.dao.model.Event;
 
 @Slf4j
 @Service
-public class MeetupComParser {
+public class MeetupComParser implements WebsiteParser {
 
   private final HttpClient httpClient = HttpClient.newHttpClient();
   @Autowired
   private ObjectMapper objectMapper;
 
+  @Override
   public Event loadAndParseEvent(String link) throws IOException, InterruptedException {
     var response = httpClient.send(HttpRequest.newBuilder()
         .uri(URI.create(link))

@@ -127,6 +127,7 @@ import vik.telegrambots.meetupbot.dao.jparepository.UsersJpaRepository;
 import vik.telegrambots.meetupbot.dao.model.Event;
 import vik.telegrambots.meetupbot.dao.model.EventSubscription;
 import vik.telegrambots.meetupbot.dao.model.User;
+import vik.telegrambots.meetupbot.parser.ParserProvider;
 import vik.telegrambots.meetupbot.utils.ActionsExecutor;
 import vik.telegrambots.meetupbot.utils.ActionsExecutor.ParseMode;
 import vik.telegrambots.meetupbot.utils.ButtonInfo;
@@ -165,7 +166,7 @@ public class MeetupCalendarBot extends AbilityBot implements SpringLongPollingBo
   @Autowired
   private TaskScheduler taskScheduler;
   @Autowired
-  private MeetupComParser meetupComParser;
+  private ParserProvider websiteParser;
 
   @Autowired
   public MeetupCalendarBot(
@@ -515,7 +516,7 @@ public class MeetupCalendarBot extends AbilityBot implements SpringLongPollingBo
             return;
           }
           try {
-            var parsedEvent = meetupComParser.loadAndParseEvent(ctx.firstArg());
+            var parsedEvent = websiteParser.loadAndParseEvent(ctx.firstArg());
             actionsExecutor.sendMessage(ctx.chatId(), parsedEvent.toBackendMessageText(), ParseMode.HTML);
           } catch (Exception e) {
             actionsExecutor.sendMessage(ctx.chatId(), "Error parsing event link: %s".formatted(e.getMessage()));
@@ -919,7 +920,8 @@ public class MeetupCalendarBot extends AbilityBot implements SpringLongPollingBo
         scheduleNotifications(event, event.getEventTime().minus(7, ChronoUnit.DAYS), User::getOneDayNotification, EXCLAMATION_MARK_EMOJI_HTML_STRING + "There is an event in <b><i>1 week</i></b>"),
         scheduleNotifications(event, event.getEventTime().minus(1, ChronoUnit.DAYS), User::getOneDayNotification, EXCLAMATION_MARK_EMOJI_HTML_STRING + "There is an event <b><i>tomorrow</i></b>"),
         scheduleNotifications(event, event.getEventTime().minus(12, ChronoUnit.HOURS), User::getTwelveHoursNotification, EXCLAMATION_MARK_EMOJI_HTML_STRING + "Event starts in <b><i>12 hours</i></b>"),
-        scheduleNotifications(event, event.getEventTime().minus(6, ChronoUnit.HOURS), User::getSixHoursNotification, EXCLAMATION_MARK_EMOJI_HTML_STRING + "Event starts only in <b><i>6 hours</i></b>!!!"),
+        scheduleNotifications(event, event.getEventTime().minus(6, ChronoUnit.HOURS), User::getSixHoursNotification,
+            EXCLAMATION_MARK_EMOJI_HTML_STRING + "Event starts only in <b><i>6 hours</i></b>!!!"),
         scheduleNotifications(event, event.getEventTime().minus(1, ChronoUnit.HOURS), User::getOneHourNotification, EXCLAMATION_MARK_EMOJI_HTML_STRING + "Event starts only in <b><i>1 hour</i></b>!!!")
     ).filter(Objects::nonNull).toList();
     eventSchedules.put(event.getEventId(), scheduledTasks);
