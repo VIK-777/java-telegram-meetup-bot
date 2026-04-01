@@ -21,7 +21,8 @@ import static vik.telegrambots.meetupbot.utils.Constants.CROSS_MARK_EMOJI;
 import static vik.telegrambots.meetupbot.utils.Constants.CROSS_MARK_EMOJI_HTML_STRING;
 import static vik.telegrambots.meetupbot.utils.Constants.DISABLE_NEW_EVENT_NOTIFICATIONS;
 import static vik.telegrambots.meetupbot.utils.Constants.ENABLE_NEW_EVENT_NOTIFICATIONS;
-import static vik.telegrambots.meetupbot.utils.Constants.EXCLAMATION_MARK_EMOJI;
+import static vik.telegrambots.meetupbot.utils.Constants.EXCLAMATION_MARK_EMOJI_HTML_STRING;
+import static vik.telegrambots.meetupbot.utils.Constants.EXCLAMATION_MARK_EMOJI_TEXT;
 import static vik.telegrambots.meetupbot.utils.Constants.FEATURE_INLINE_QUERY_MESSAGE;
 import static vik.telegrambots.meetupbot.utils.Constants.GREEN_DOT_EMOJI;
 import static vik.telegrambots.meetupbot.utils.Constants.IM_DONE_BUTTON;
@@ -55,6 +56,7 @@ import static vik.telegrambots.meetupbot.utils.UserNotificationToggle.TOGGLE_6_H
 import static vik.telegrambots.meetupbot.utils.UserNotificationToggle.TOGGLE_INFO_NOTIFICATION;
 import static vik.telegrambots.meetupbot.utils.UserNotificationToggle.TOGGLE_INFO_NOTIFICATION_FROM_SETTINGS;
 import static vik.telegrambots.meetupbot.utils.UserNotificationToggle.TOGGLE_NEW_EVENTS_NOTIFICATION_FROM_SETTINGS;
+import static vik.telegrambots.meetupbot.utils.UserState.WAITING_SUGGESTIONS_MESSAGE;
 import static vik.telegrambots.meetupbot.utils.Utils.writeDateTimeForInlineQuerySearch;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -162,6 +164,8 @@ public class MeetupCalendarBot extends AbilityBot implements SpringLongPollingBo
   private EventsJpaRepository eventsRepository;
   @Autowired
   private TaskScheduler taskScheduler;
+  @Autowired
+  private MeetupComParser meetupComParser;
 
   @Autowired
   public MeetupCalendarBot(
@@ -323,7 +327,7 @@ public class MeetupCalendarBot extends AbilityBot implements SpringLongPollingBo
     return Ability
         .builder()
         .name("suggest")
-        .info("Suggest an event. Should be invoked as /suggest <your text>")
+        .info("Suggest an event. Could also be invoked as /suggest <your text>")
         .locality(USER)
         .privacy(PUBLIC)
         .action(ctx -> {
@@ -333,12 +337,11 @@ public class MeetupCalendarBot extends AbilityBot implements SpringLongPollingBo
             return;
           }
           if (ctx.arguments().length == 0) {
-            actionsExecutor.sendMessage(chatId, "Please invoke command as /suggest <your text>");
+            actionsExecutor.sendMessage(chatId, "Write your suggestion");
+            userStates.put(ctx.chatId(), WAITING_SUGGESTIONS_MESSAGE);
             return;
           }
-          var name = ctx.user().getUserName() != null ? addTag(ctx.user().getUserName()) : fullName(ctx.user());
-          actionsExecutor.sendMessage(creatorId, "New suggestion:\n%s: %s".formatted(name, String.join(" ", ctx.arguments())));
-          actionsExecutor.sendMessage(chatId, "Thank you! Your message was sent to the owner");
+          processSuggestion(ctx.user(), String.join(" ", ctx.arguments()));
         })
         .build();
   }
@@ -499,6 +502,28 @@ public class MeetupCalendarBot extends AbilityBot implements SpringLongPollingBo
         .build();
   }
 
+  public Ability parseEventLink() {
+    return Ability
+        .builder()
+        .name("parse_event_link")
+        .info("Parse Event link")
+        .locality(USER)
+        .privacy(CREATOR)
+        .action(ctx -> {
+          if (ctx.arguments().length == 0) {
+            actionsExecutor.sendMessage(ctx.chatId(), "Please invoke command as /parse_event_link <link>");
+            return;
+          }
+          try {
+            var parsedEvent = meetupComParser.loadAndParseEvent(ctx.firstArg());
+            actionsExecutor.sendMessage(ctx.chatId(), parsedEvent.toBackendMessageText(), ParseMode.HTML);
+          } catch (Exception e) {
+            actionsExecutor.sendMessage(ctx.chatId(), "Error parsing event link: %s".formatted(e.getMessage()));
+          }
+        })
+        .build();
+  }
+
   private MessageInfo getMessageAndButtonsForUpcomingEvents(long userId) {
     var sb = new StringBuilder("\uD83D\uDCC5 <b>Upcoming Events</b>\n");
     var userSubscriptions = eventSubscriptionsRepository.findAllByUserIdAsMap(userId);
@@ -573,7 +598,7 @@ public class MeetupCalendarBot extends AbilityBot implements SpringLongPollingBo
             eventSubscriptionsRepository.findAllByEventIdAndSubscribed(event.getEventId(), true)
                 .forEach(sub -> {
                   actionsExecutor.sendMessage(sub.getUserId(), "%s on %s was canceled %s\n%s"
-                      .formatted(event.getName(), Utils.writeDateTime(event.getEventTime()), SMILE_WITH_TEAR_EMOJI, event.getLink()));
+                      .formatted(event.getName(), Utils.writeDateTimeWithWeekDay(event.getEventTime()), SMILE_WITH_TEAR_EMOJI, event.getLink()));
                   eventSubscriptionsRepository.deleteById(sub.getRowId());
                 });
             eventsRepository.deleteById(event.getEventId());
@@ -614,67 +639,76 @@ public class MeetupCalendarBot extends AbilityBot implements SpringLongPollingBo
     BiConsumer<BaseAbilityBot, Update> action = (abilityBot, upd) -> {
       var chatId = getChatId(upd);
       var messageText = upd.getMessage().getText().replace("``", "`");
-      if (Objects.requireNonNull(userStates.get(chatId)) == UserState.WAITING_NEW_EVENT) {
-        var event = Event.fromMessageText(messageText);
-        event.setFromUser(chatId);
-        if (!ObjectUtils.allNotNull(event.getName(), event.getEventTime(), event.getDescription(), event.getLink())) {
-          actionsExecutor.sendMessage(chatId, "Can't parse message, please correct");
-          return;
-        }
-        var savedEvent = eventsRepository.save(event);
-        log.info("Saved event: {}", savedEvent);
-        actionsExecutor.sendMessage(chatId, "New event was saved");
-        var buttons = List.of(
-            new ButtonInfo("Send me notifications", SUBSCRIBE_TO_EVENT + " " + savedEvent.getEventId(), CHECK_MARK_EMOJI.id(), GREEN),
-            new ButtonInfo("I'll skip this one", UNSUBSCRIBE_FROM_EVENT + " " + savedEvent.getEventId(), CROSS_MARK_EMOJI.id(), RED)
-        );
-        getAllSubscribedUsers().forEach(id -> {
-          var result = actionsExecutor.sendMessage(id, savedEvent.toMessageText(), getInlineGrid(buttons, 1), ActionsExecutor.ParseMode.HTML);
-          if (result != null) {
-            log.info("Notification was sent to user {}", id);
+      switch (Objects.requireNonNull(userStates.get(chatId))) {
+        case WAITING_NEW_EVENT -> {
+          var event = Event.fromMessageText(messageText);
+          event.setFromUser(chatId);
+          if (!ObjectUtils.allNotNull(event.getName(), event.getEventTime(), event.getDescription(), event.getLink())) {
+            actionsExecutor.sendMessage(chatId, "Can't parse message, please correct");
+            return;
           }
-        });
-        actionsExecutor.sendMessage(chatId, "All users were notified");
-        scheduleNotifications(savedEvent);
-        actionsExecutor.sendMessage(chatId, "And notifications scheduled");
-      } else if (Objects.requireNonNull(userStates.get(chatId)) == UserState.WAITING_EVENT_UPDATE) {
-        var oldEvent = eventsRepository.findById(Long.valueOf(userStatesParams.get(chatId))).orElseThrow();
-        var updatedEvent = Event.fromMessageText(messageText);
-        if (!ObjectUtils.allNotNull(updatedEvent.getName(), updatedEvent.getEventTime(), updatedEvent.getDescription(), updatedEvent.getLink())) {
-          actionsExecutor.sendMessage(chatId, "Can't parse message, please correct");
-          return;
-        }
-        var updatedFields = new ArrayList<String>();
-        if (!Objects.equals(oldEvent.getName(), updatedEvent.getName())) {
-          updatedFields.add("Name");
-          oldEvent.setName(updatedEvent.getName());
-        }
-        if (!Objects.equals(oldEvent.getEventTime(), updatedEvent.getEventTime())) {
-          updatedFields.add("Time");
-          oldEvent.setEventTime(updatedEvent.getEventTime());
-        }
-        if (!Objects.equals(oldEvent.getDescription(), updatedEvent.getDescription())) {
-          updatedFields.add("Description");
-          oldEvent.setDescription(updatedEvent.getDescription());
-        }
-        if (!Objects.equals(oldEvent.getLink(), updatedEvent.getLink())) {
-          updatedFields.add("Link");
-          oldEvent.setLink(updatedEvent.getLink());
-        }
-        if (!updatedFields.isEmpty()) {
-          var savedEvent = eventsRepository.save(oldEvent);
-          actionsExecutor.sendMessage(chatId, "Event was updated");
+          var savedEvent = eventsRepository.save(event);
+          log.info("Saved event: {}", savedEvent);
+          actionsExecutor.sendMessage(chatId, "New event was saved");
+          var buttons = List.of(
+              new ButtonInfo("Send me notifications", SUBSCRIBE_TO_EVENT + " " + savedEvent.getEventId(), CHECK_MARK_EMOJI.id(), GREEN),
+              new ButtonInfo("I'll skip this one", UNSUBSCRIBE_FROM_EVENT + " " + savedEvent.getEventId(), CROSS_MARK_EMOJI.id(), RED)
+          );
+          getAllSubscribedUsers().forEach(id -> {
+            var result = actionsExecutor.sendMessage(id, savedEvent.toMessageText(), getInlineGrid(buttons, 1), ActionsExecutor.ParseMode.HTML);
+            if (result != null) {
+              log.info("Notification was sent to user {}", id);
+            }
+          });
+          actionsExecutor.sendMessage(chatId, "All users were notified");
           scheduleNotifications(savedEvent);
-          eventSubscriptionsRepository.findAllByEventIdAndSubscribed(savedEvent.getEventId(), true)
-              .forEach(sub -> actionsExecutor.sendMessage(sub.getUserId(), "ℹ️ %s event was updated.\nFollowing %s changed: %s\n\n%s"
-                  .formatted(savedEvent.getName(), updatedFields.size() == 1 ? "field was" : "fields were", String.join(", ", updatedFields), updatedEvent.toMessageText()), ParseMode.HTML));
+          actionsExecutor.sendMessage(chatId, "And notifications scheduled");
         }
-      } else {
-        actionsExecutor.sendMessage(chatId, "Sorry, can't understand, you can start again at any time - /start");
+        case WAITING_EVENT_UPDATE -> {
+          var oldEvent = eventsRepository.findById(Long.valueOf(userStatesParams.get(chatId))).orElseThrow();
+          var updatedEvent = Event.fromMessageText(messageText);
+          if (!ObjectUtils.allNotNull(updatedEvent.getName(), updatedEvent.getEventTime(), updatedEvent.getDescription(), updatedEvent.getLink())) {
+            actionsExecutor.sendMessage(chatId, "Can't parse message, please correct");
+            return;
+          }
+          var updatedFields = new ArrayList<String>();
+          if (!Objects.equals(oldEvent.getName(), updatedEvent.getName())) {
+            updatedFields.add("Name");
+            oldEvent.setName(updatedEvent.getName());
+          }
+          if (!Objects.equals(oldEvent.getEventTime(), updatedEvent.getEventTime())) {
+            updatedFields.add("Time");
+            oldEvent.setEventTime(updatedEvent.getEventTime());
+          }
+          if (!Objects.equals(oldEvent.getDescription(), updatedEvent.getDescription())) {
+            updatedFields.add("Description");
+            oldEvent.setDescription(updatedEvent.getDescription());
+          }
+          if (!Objects.equals(oldEvent.getLink(), updatedEvent.getLink())) {
+            updatedFields.add("Link");
+            oldEvent.setLink(updatedEvent.getLink());
+          }
+          if (!updatedFields.isEmpty()) {
+            var savedEvent = eventsRepository.save(oldEvent);
+            actionsExecutor.sendMessage(chatId, "Event was updated");
+            scheduleNotifications(savedEvent);
+            eventSubscriptionsRepository.findAllByEventIdAndSubscribed(savedEvent.getEventId(), true)
+                .forEach(sub -> actionsExecutor.sendMessage(sub.getUserId(), "ℹ️ %s event was updated.\nFollowing %s changed: %s\n\n%s"
+                    .formatted(savedEvent.getName(), updatedFields.size() == 1 ? "field was" : "fields were", String.join(", ", updatedFields), updatedEvent.toMessageText()), ParseMode.HTML));
+          }
+        }
+        case WAITING_SUGGESTIONS_MESSAGE -> processSuggestion(getUser(upd), messageText);
+        default -> actionsExecutor.sendMessage(chatId, "Sorry, can't understand, you can start again at any time - /start");
       }
     };
 
     return Reply.of(action, Flag.TEXT, update -> !update.getMessage().isCommand(), AbilityUtils::isUserMessage);
+  }
+
+  private void processSuggestion(org.telegram.telegrambots.meta.api.objects.User user, String messageText) {
+    var name = user.getUserName() != null ? addTag(user.getUserName()) : fullName(user);
+    actionsExecutor.sendMessage(creatorId, "New suggestion:\n%s: %s".formatted(name, messageText));
+    actionsExecutor.sendMessage(user.getId(), "Thank you! Your message was sent to the owner");
   }
 
   public Reply replyToInlineQuery() {
@@ -696,9 +730,9 @@ public class MeetupCalendarBot extends AbilityBot implements SpringLongPollingBo
           .results(events.stream().map(event -> InlineQueryResultArticle.builder()
               .id(String.valueOf(inlineQueryId.getAndIncrement()))
               .title(event.getName())
-              .description(Utils.writeDateTime(event.getEventTime()) + "\n" + event.getDescription())
+              .description(Utils.writeDateTimeWithWeekDay(event.getEventTime()) + "\n" + event.getDescription())
               .inputMessageContent(InputTextMessageContent.builder()
-                  .messageText(event.toMessageText() + "\n\n──────────────\n" + EXCLAMATION_MARK_EMOJI + "More events in @meetup_calendar_bot")
+                  .messageText(event.toMessageText() + "\n\n──────────────\n" + EXCLAMATION_MARK_EMOJI_TEXT + "More events in @meetup_calendar_bot")
                   .parseMode(ActionsExecutor.ParseMode.HTML.getAsString())
                   .build())
               .build()).toList())
@@ -882,11 +916,11 @@ public class MeetupCalendarBot extends AbilityBot implements SpringLongPollingBo
       eventSchedules.get(event.getEventId()).forEach(task -> task.cancel(true));
     }
     var scheduledTasks = Stream.of(
-        scheduleNotifications(event, event.getEventTime().minus(7, ChronoUnit.DAYS), User::getOneDayNotification, "There is an event in <b>1 week</b>: %s".formatted(event.getName())),
-        scheduleNotifications(event, event.getEventTime().minus(1, ChronoUnit.DAYS), User::getOneDayNotification, "There is an event <b>tomorrow</b>: %s".formatted(event.getName())),
-        scheduleNotifications(event, event.getEventTime().minus(12, ChronoUnit.HOURS), User::getTwelveHoursNotification, "%s starts in <b>12 hours</b>".formatted(event.getName())),
-        scheduleNotifications(event, event.getEventTime().minus(6, ChronoUnit.HOURS), User::getSixHoursNotification, "%s starts only in <b>6 hours</b>!!!".formatted(event.getName())),
-        scheduleNotifications(event, event.getEventTime().minus(1, ChronoUnit.HOURS), User::getOneHourNotification, "%s starts only in <b>1 hour</b>!!!".formatted(event.getName()))
+        scheduleNotifications(event, event.getEventTime().minus(7, ChronoUnit.DAYS), User::getOneDayNotification, EXCLAMATION_MARK_EMOJI_HTML_STRING + "There is an event in <b><i>1 week</i></b>"),
+        scheduleNotifications(event, event.getEventTime().minus(1, ChronoUnit.DAYS), User::getOneDayNotification, EXCLAMATION_MARK_EMOJI_HTML_STRING + "There is an event <b><i>tomorrow</i></b>"),
+        scheduleNotifications(event, event.getEventTime().minus(12, ChronoUnit.HOURS), User::getTwelveHoursNotification, EXCLAMATION_MARK_EMOJI_HTML_STRING + "Event starts in <b><i>12 hours</i></b>"),
+        scheduleNotifications(event, event.getEventTime().minus(6, ChronoUnit.HOURS), User::getSixHoursNotification, EXCLAMATION_MARK_EMOJI_HTML_STRING + "Event starts only in <b><i>6 hours</i></b>!!!"),
+        scheduleNotifications(event, event.getEventTime().minus(1, ChronoUnit.HOURS), User::getOneHourNotification, EXCLAMATION_MARK_EMOJI_HTML_STRING + "Event starts only in <b><i>1 hour</i></b>!!!")
     ).filter(Objects::nonNull).toList();
     eventSchedules.put(event.getEventId(), scheduledTasks);
   }
@@ -904,7 +938,6 @@ public class MeetupCalendarBot extends AbilityBot implements SpringLongPollingBo
                 """
                     %s
                     
-                    <b>Full info:</b>
                     %s
                     """
                     .formatted(notificationText, event.toMessageText()),

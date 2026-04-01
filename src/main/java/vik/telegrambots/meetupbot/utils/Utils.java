@@ -29,6 +29,10 @@ public class Utils {
     }
 
     public static String writeDateTime(Instant dateTime) {
+        return dateTimeFormatter.format(dateTime);
+    }
+
+    public static String writeDateTimeWithWeekDay(Instant dateTime) {
         return dateTimeFormatterWithWeekDay.format(dateTime);
     }
 

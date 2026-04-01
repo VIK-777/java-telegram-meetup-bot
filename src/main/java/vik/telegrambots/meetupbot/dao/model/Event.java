@@ -2,10 +2,12 @@ package vik.telegrambots.meetupbot.dao.model;
 
 import static vik.telegrambots.meetupbot.utils.Constants.DESCRIPTION_STARTS_WITH;
 import static vik.telegrambots.meetupbot.utils.Constants.EVENT_TEMPLATE;
+import static vik.telegrambots.meetupbot.utils.Constants.EVENT_TEMPLATE_SIMPLE;
 import static vik.telegrambots.meetupbot.utils.Constants.LINK_STARTS_WITH;
 import static vik.telegrambots.meetupbot.utils.Constants.NAME_STARTS_WITH;
 import static vik.telegrambots.meetupbot.utils.Constants.TIME_STARTS_WITH;
 import static vik.telegrambots.meetupbot.utils.Utils.parseDateTime;
+import static vik.telegrambots.meetupbot.utils.Utils.writeDateTime;
 import static vik.telegrambots.meetupbot.utils.Utils.writeDateTimeHumanReadable;
 
 import jakarta.persistence.Embedded;
@@ -69,6 +71,10 @@ public class Event {
             }
         });
         return event;
+    }
+
+    public String toBackendMessageText() {
+        return EVENT_TEMPLATE_SIMPLE.formatted(name, writeDateTime(eventTime), description, link);
     }
 
     public String toMessageText() {

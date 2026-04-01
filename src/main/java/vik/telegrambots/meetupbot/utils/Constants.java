@@ -13,7 +13,7 @@ public class Constants {
             /help - Info about available commands
             /upcoming_events - Info regarding upcoming events, here you can also subscribe to any event individually
             /settings - Here you can setup notification settings
-            /suggest - If you have an event, you can suggest it to be added to the bot by using:
+            /suggest - If you have an event, you can suggest it to be added to the bot. Also could be using as:
             /suggest <your message>
             """;
 
@@ -50,7 +50,9 @@ public class Constants {
     public static final String GREEN_DOT_EMOJI = "🟢 ";
     public static final String RED_DOT_EMOJI = "🔴 ";
     public static final String BLUE_DOT_EMOJI = "🔵 ";
-    public static final String EXCLAMATION_MARK_EMOJI = "❗";
+    public static final CustomEmoji EXCLAMATION_MARK_EMOJI = new CustomEmoji("❗", "5467928559664242360");
+    public static final String EXCLAMATION_MARK_EMOJI_HTML_STRING = EXCLAMATION_MARK_EMOJI.toHtmlString() + " ";
+    public static final String EXCLAMATION_MARK_EMOJI_TEXT = EXCLAMATION_MARK_EMOJI.emoji();
     public static final String FLOPPY_DISK_EMOJI = "\uD83D\uDCBE ";
     public static final String NEW_EMOJI = "\uD83C\uDD95 ";
     public static final String SMILE_WITH_TEAR_EMOJI = "\uD83D\uDE22 ";
