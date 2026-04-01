@@ -53,6 +53,8 @@ public class Constants {
     public static final CustomEmoji EXCLAMATION_MARK_EMOJI = new CustomEmoji("❗", "5467928559664242360");
     public static final String EXCLAMATION_MARK_EMOJI_HTML_STRING = EXCLAMATION_MARK_EMOJI.toHtmlString() + " ";
     public static final String EXCLAMATION_MARK_EMOJI_TEXT = EXCLAMATION_MARK_EMOJI.emoji();
+    public static final CustomEmoji LOCATION_EMOJI = new CustomEmoji("\uD83D\uDCCD", "5321275372333979355");
+    public static final String LOCATION_EMOJI_HTML_STRING = LOCATION_EMOJI.toHtmlString() + " ";
     public static final String FLOPPY_DISK_EMOJI = "\uD83D\uDCBE ";
     public static final String NEW_EMOJI = "\uD83C\uDD95 ";
     public static final String SMILE_WITH_TEAR_EMOJI = "\uD83D\uDE22 ";
@@ -60,19 +62,21 @@ public class Constants {
     public static String TIME_STARTS_WITH = "Time: ";
     public static String DESCRIPTION_STARTS_WITH = "Description: ";
     public static String LINK_STARTS_WITH = "Link: ";
+    public static String LOCATION_STARTS_WITH = "Location: ";
     public static final String EVENT_TEMPLATE_SIMPLE =
             NAME_STARTS_WITH + "%s\n"
                     + TIME_STARTS_WITH + "%s\n"
                     + DESCRIPTION_STARTS_WITH + "%s\n"
+                    + LOCATION_STARTS_WITH + "%s\n"
                     + LINK_STARTS_WITH + "%s";
-    public static String NEW_EVENT_MESSAGE = "Please send event in following format:\n" + EVENT_TEMPLATE_SIMPLE.formatted("", "yyyy-MM-dd HH:MM", "", "");
+    public static String NEW_EVENT_MESSAGE = "Please send event in following format:\n<blockquote>" + EVENT_TEMPLATE_SIMPLE.formatted("", "yyyy-MM-dd HH:MM", "", "", "") + "</blockquote>";
     public static final String EVENT_TEMPLATE = """
         %s<b>%s</b>
-        
-        %s%s
         %s
         
-        %s<a href="%s">Open event page</a>""".formatted(EVENT_NAME_EMOJI_HTML_STRING, "%s", TIME_EMOJI_HTML_STRING, "%s", "%s", LINK_EMOJI_HTML_STRING, "%s");
+        %s%s
+        
+        %s<a href="%s">Open event page</a>""".formatted(EVENT_NAME_EMOJI_HTML_STRING, "%s", "%s", TIME_EMOJI_HTML_STRING, "%s", LINK_EMOJI_HTML_STRING, "%s");
     public static final String IM_DONE_BUTTON_TEXT = FLOPPY_DISK_EMOJI + "I'm done";
     public static final String NOTIFICATIONS_SETTINGS_TEXT = "Tick which notifications you want to receive and then click \"" + IM_DONE_BUTTON_TEXT + "\"";
     public static final String FEATURE_INLINE_QUERY_MESSAGE = NEW_EMOJI + """

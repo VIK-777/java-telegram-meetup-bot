@@ -4,6 +4,8 @@ import static vik.telegrambots.meetupbot.utils.Constants.DESCRIPTION_STARTS_WITH
 import static vik.telegrambots.meetupbot.utils.Constants.EVENT_TEMPLATE;
 import static vik.telegrambots.meetupbot.utils.Constants.EVENT_TEMPLATE_SIMPLE;
 import static vik.telegrambots.meetupbot.utils.Constants.LINK_STARTS_WITH;
+import static vik.telegrambots.meetupbot.utils.Constants.LOCATION_EMOJI_HTML_STRING;
+import static vik.telegrambots.meetupbot.utils.Constants.LOCATION_STARTS_WITH;
 import static vik.telegrambots.meetupbot.utils.Constants.NAME_STARTS_WITH;
 import static vik.telegrambots.meetupbot.utils.Constants.TIME_STARTS_WITH;
 import static vik.telegrambots.meetupbot.utils.Utils.parseDateTime;
@@ -25,6 +27,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 
 @Slf4j
 @Data
@@ -44,6 +47,7 @@ public class Event {
     String name;
     String description;
     String link;
+    String location;
     @Embedded
     TechnicalFields technicalFields;
 
@@ -69,15 +73,22 @@ public class Event {
             if (line.startsWith(LINK_STARTS_WITH)) {
                 event.setLink(line.substring(LINK_STARTS_WITH.length()));
             }
+            if (line.startsWith(LOCATION_STARTS_WITH)) {
+                event.setLocation(line.substring(LOCATION_STARTS_WITH.length()));
+            }
         });
         return event;
     }
 
     public String toBackendMessageText() {
-        return EVENT_TEMPLATE_SIMPLE.formatted(name, writeDateTime(eventTime), description, link);
+        return EVENT_TEMPLATE_SIMPLE.formatted(name, writeDateTime(eventTime), description, location, link);
     }
 
     public String toMessageText() {
-        return EVENT_TEMPLATE.formatted(name, writeDateTimeHumanReadable(eventTime), description, link);
+        var location = "";
+        if (StringUtils.isNotEmpty(this.location)) {
+            location = "\n" + LOCATION_EMOJI_HTML_STRING + "<code>" + this.location + "</code>";
+        }
+        return EVENT_TEMPLATE.formatted(name, description, writeDateTimeHumanReadable(eventTime) + location, link);
     }
 }

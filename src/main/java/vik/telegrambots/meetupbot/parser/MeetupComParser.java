@@ -51,14 +51,14 @@ public class MeetupComParser implements WebsiteParser {
     String url = root.get("url").asText();
 
     Instant eventTime = Instant.parse(startDate); // Handles ISO 8601 format like "2026-04-23T17:30:00+02:00"
-
-    String fullDescription = locationName + " - " + streetAddress + "\n\n" + description;
+    String location = (locationName + " - " + streetAddress).replace(",,", ",");
 
     return Event.builder()
         .name(name)
         .eventTime(eventTime)
-        .description(fullDescription)
+        .description(description)
         .link(url)
+        .location(location)
         .build();
   }
 }

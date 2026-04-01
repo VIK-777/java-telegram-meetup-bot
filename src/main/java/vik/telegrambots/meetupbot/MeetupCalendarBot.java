@@ -632,7 +632,7 @@ public class MeetupCalendarBot extends AbilityBot implements SpringLongPollingBo
   @SneakyThrows
   public void newEvent(MessageContext ctx) {
     var chatId = ctx.chatId();
-    actionsExecutor.sendMessage(chatId, NEW_EVENT_MESSAGE);
+    actionsExecutor.sendMessage(chatId, NEW_EVENT_MESSAGE, ParseMode.HTML);
     userStates.put(chatId, UserState.WAITING_NEW_EVENT);
   }
 
