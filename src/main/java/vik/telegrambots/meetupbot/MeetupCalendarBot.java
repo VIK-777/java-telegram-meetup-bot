@@ -698,8 +698,8 @@ public class MeetupCalendarBot extends AbilityBot implements SpringLongPollingBo
             actionsExecutor.sendMessage(chatId, "Event was updated");
             scheduleNotifications(savedEvent);
             eventSubscriptionsRepository.findAllByEventIdAndSubscribed(savedEvent.getEventId(), true)
-                .forEach(sub -> actionsExecutor.sendMessage(sub.getUserId(), "ℹ️ %s event was updated.\nFollowing %s changed: %s\n\n%s"
-                    .formatted(savedEvent.getName(), updatedFields.size() == 1 ? "field was" : "fields were", String.join(", ", updatedFields), updatedEvent.toMessageText()), ParseMode.HTML));
+                .forEach(sub -> actionsExecutor.sendMessage(sub.getUserId(), EXCLAMATION_MARK_EMOJI_HTML_STRING + "Event was updated.\nFollowing %s changed: %s\n──────────────\n\n%s"
+                    .formatted(updatedFields.size() == 1 ? "field was" : "fields were", "<i>" + String.join(", ", updatedFields) + "</i>", updatedEvent.toMessageText()), ParseMode.HTML));
           }
         }
         case WAITING_SUGGESTIONS_MESSAGE -> processSuggestion(getUser(upd), messageText);

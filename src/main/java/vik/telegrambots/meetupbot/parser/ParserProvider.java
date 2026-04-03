@@ -15,8 +15,8 @@ public class ParserProvider implements WebsiteParser {
   @Override
   public Event loadAndParseEvent(String link) throws IOException, InterruptedException {
     var url = URI.create(link);
-    var parser = switch (url.getHost()) {
-      case "www.meetup.com", "meetu.ps" -> meetupComParser;
+    var parser = switch (url.getHost().replace("www.", "").toLowerCase()) {
+      case "meetup.com", "meetu.ps" -> meetupComParser;
       default -> throw new IllegalArgumentException("Unsupported website: " + url.getHost());
     };
     return parser.loadAndParseEvent(link);
