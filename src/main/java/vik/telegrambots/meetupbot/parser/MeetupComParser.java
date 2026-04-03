@@ -3,36 +3,21 @@ package vik.telegrambots.meetupbot.parser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.io.IOException;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.time.Instant;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import vik.telegrambots.meetupbot.dao.model.Event;
 
 @Slf4j
 @Service
-public class MeetupComParser implements WebsiteParser {
+@RequiredArgsConstructor
+public class MeetupComParser extends WebsiteParser {
 
-  private final HttpClient httpClient = HttpClient.newHttpClient();
-  @Autowired
-  private ObjectMapper objectMapper;
+  private final ObjectMapper objectMapper;
 
   @Override
-  public Event loadAndParseEvent(String link) throws IOException, InterruptedException {
-    var response = httpClient.send(HttpRequest.newBuilder()
-        .uri(URI.create(link))
-        .GET()
-        .build(), HttpResponse.BodyHandlers.ofString());
-    log.info("Received response, code: {}", response.statusCode());
-    return parseEventDescription(response.body());
-  }
-
-  private Event parseEventDescription(String htmlResponse) throws JsonProcessingException {
+  protected Event parseEventDescription(String htmlResponse) throws JsonProcessingException {
     int startIndex = htmlResponse.indexOf("<script type=\"application/ld+json\">{\"@context\":\"https://schema.org\",\"@type\":\"Event\"");
     if (startIndex == -1) {
       throw new RuntimeException("Event JSON not found in response");

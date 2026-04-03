@@ -166,7 +166,7 @@ public class MeetupCalendarBot extends AbilityBot implements SpringLongPollingBo
   @Autowired
   private TaskScheduler taskScheduler;
   @Autowired
-  private ParserProvider websiteParser;
+  private ParserProvider websiteParserProvider;
 
   @Autowired
   public MeetupCalendarBot(
@@ -516,7 +516,7 @@ public class MeetupCalendarBot extends AbilityBot implements SpringLongPollingBo
             return;
           }
           try {
-            var parsedEvent = websiteParser.loadAndParseEvent(ctx.firstArg());
+            var parsedEvent = websiteParserProvider.getParser(ctx.firstArg()).loadAndParseEvent(ctx.firstArg());
             actionsExecutor.sendMessage(ctx.chatId(), parsedEvent.toBackendMessageText(), ParseMode.HTML);
           } catch (Exception e) {
             actionsExecutor.sendMessage(ctx.chatId(), "Error parsing event link: %s".formatted(e.getMessage()));
