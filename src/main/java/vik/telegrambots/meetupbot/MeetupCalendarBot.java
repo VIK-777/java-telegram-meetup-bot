@@ -621,7 +621,7 @@ public class MeetupCalendarBot extends AbilityBot implements SpringLongPollingBo
           var chatId = ctx.chatId();
           var event = eventsRepository.findById(Long.valueOf(ctx.firstArg())).orElseThrow();
           actionsExecutor.sendMessage(chatId, "Old event info:");
-          actionsExecutor.sendMessage(chatId, event.toMessageText());
+          actionsExecutor.sendMessage(chatId, event.toBackendMessageText());
           actionsExecutor.sendMessage(chatId, "Please send updated event info:");
           userStates.put(chatId, UserState.WAITING_EVENT_UPDATE);
           userStatesParams.put(chatId, ctx.firstArg());
@@ -688,6 +688,10 @@ public class MeetupCalendarBot extends AbilityBot implements SpringLongPollingBo
           if (!Objects.equals(oldEvent.getLink(), updatedEvent.getLink())) {
             updatedFields.add("Link");
             oldEvent.setLink(updatedEvent.getLink());
+          }
+          if (!Objects.equals(oldEvent.getLocation(), updatedEvent.getLocation())) {
+            updatedFields.add("Location");
+            oldEvent.setLocation(updatedEvent.getLocation());
           }
           if (!updatedFields.isEmpty()) {
             var savedEvent = eventsRepository.save(oldEvent);
