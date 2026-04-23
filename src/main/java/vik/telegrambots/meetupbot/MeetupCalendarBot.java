@@ -67,6 +67,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -92,6 +94,7 @@ import java.util.stream.Stream;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -840,12 +843,19 @@ public class MeetupCalendarBot extends AbilityBot implements SpringLongPollingBo
             var subscribed = eventSubscriptionsRepository.findByEventIdAndUserId(eventId, chatId)
                 .map(EventSubscription::getSubscribed)
                 .orElse(false);
+            var buttons = new ArrayList<ButtonInfo>();
+            buttons.add(getSubscriptionButton(subscribed, eventId, true));
+            if (StringUtils.isNotEmpty(event.getLocation())) {
+              var encodedLocation = URLEncoder.encode(event.getLocation(), StandardCharsets.UTF_8);
+              buttons.add(new ButtonInfo("Google Maps", "https://www.google.com/maps/search/?api=1&query=" + encodedLocation, true));
+              buttons.add(new ButtonInfo("Apple Maps", "https://maps.apple.com/?q=" + encodedLocation, true));
+            }
+            buttons.add(new ButtonInfo(RETURN_BACK_BUTTON, OPEN_UPCOMING_EVENTS, RETURN_BACK_EMOJI));
             actionsExecutor.updateMessageText(upd, event.toMessageText()
                     + "\n\n──────────────\n" + (subscribed
                     ? CHECK_MARK_EMOJI_HTML_STRING + "You're receiving notifications for this event"
                     : CROSS_MARK_EMOJI_HTML_STRING + "You're not receiving notifications for this event"),
-                getInlineGrid(List.of(getSubscriptionButton(subscribed, eventId, true),
-                    new ButtonInfo(RETURN_BACK_BUTTON, OPEN_UPCOMING_EVENTS, RETURN_BACK_EMOJI)), 1),
+                getInlineGrid(buttons, 1),
                 ActionsExecutor.ParseMode.HTML);
           });
         }

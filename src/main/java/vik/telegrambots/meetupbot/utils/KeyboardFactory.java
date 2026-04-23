@@ -17,7 +17,11 @@ public class KeyboardFactory {
         final var counter = new AtomicInteger();
         values.forEach(buttonInfo -> {
             var button = new InlineKeyboardButton(buttonInfo.buttonText());
-            button.setCallbackData(buttonInfo.callbackData());
+            if (buttonInfo.url() != null) {
+                button.setUrl(buttonInfo.url());
+            } else {
+                button.setCallbackData(buttonInfo.callbackData());
+            }
             button.setIconCustomEmojiId(buttonInfo.emoji());
             button.setStyle(buttonInfo.color().getTelegramStyle());
             row.add(button);
