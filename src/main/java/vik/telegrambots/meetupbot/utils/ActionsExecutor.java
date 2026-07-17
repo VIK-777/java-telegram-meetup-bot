@@ -149,6 +149,7 @@ public class ActionsExecutor {
 
     public enum ParseMode {
         MARKDOWN,
+        MARKDOWNV2,
         HTML,
         NULL;
 

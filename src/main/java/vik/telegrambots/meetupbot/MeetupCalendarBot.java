@@ -533,7 +533,7 @@ public class MeetupCalendarBot extends AbilityBot implements SpringLongPollingBo
         .privacy(CREATOR)
         .action(ctx -> {
           var startTimeInSeconds = ManagementFactory.getRuntimeMXBean().getStartTime() / 1000;
-          actionsExecutor.sendMessage(ctx.chatId(), "Bot started: ![%1$s](tg://time?unix=%1$s&format=r)".formatted(startTimeInSeconds), ParseMode.MARKDOWN);
+          actionsExecutor.sendMessage(ctx.chatId(), "Bot started: ![%1$s](tg://time?unix=%1$s&format=r)".formatted(startTimeInSeconds), ParseMode.MARKDOWNV2);
         })
         .build();
   }
