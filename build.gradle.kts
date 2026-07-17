@@ -51,7 +51,6 @@ dependencies {
     }
     implementation("org.telegram:telegrambots-abilities:9.5.0") {
         exclude(group = "net.jpountz.lz4", module = "lz4")
-        exclude(group = "org.eclipse.jetty.http2", module = "http2-common")
     }
     implementation("org.telegram:telegrambots-client:9.5.0")
     implementation("at.yawk.lz4:lz4-java:1.10.4")

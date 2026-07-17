@@ -334,6 +334,9 @@ public class MeetupCalendarBot extends AbilityBot implements SpringLongPollingBo
         .action(ctx -> {
           var chatId = ctx.chatId();
           if (creatorId() == chatId) {
+            if (ctx.arguments().length == 1) {
+              parseLinkAndSendMessageWithResult(ctx);
+            }
             newEvent(ctx);
             return;
           }
@@ -506,23 +509,27 @@ public class MeetupCalendarBot extends AbilityBot implements SpringLongPollingBo
   public Ability parseEventLink() {
     return Ability
         .builder()
-        .name("parse_event_link")
+        .name("parse")
         .info("Parse Event link")
         .locality(USER)
         .privacy(CREATOR)
         .action(ctx -> {
           if (ctx.arguments().length == 0) {
-            actionsExecutor.sendMessage(ctx.chatId(), "Please invoke command as /parse_event_link <link>");
+            actionsExecutor.sendMessage(ctx.chatId(), "Please invoke command as /parse <link>");
             return;
           }
-          try {
-            var parsedEvent = websiteParserProvider.getParser(ctx.firstArg()).loadAndParseEvent(ctx.firstArg());
-            actionsExecutor.sendMessage(ctx.chatId(), parsedEvent.toBackendMessageText(), ParseMode.HTML);
-          } catch (Exception e) {
-            actionsExecutor.sendMessage(ctx.chatId(), "Error parsing event link: %s".formatted(e.getMessage()));
-          }
+          parseLinkAndSendMessageWithResult(ctx);
         })
         .build();
+  }
+
+  private void parseLinkAndSendMessageWithResult(MessageContext ctx) {
+    try {
+      var parsedEvent = websiteParserProvider.getParser(ctx.firstArg()).loadAndParseEvent(ctx.firstArg());
+      actionsExecutor.sendMessage(ctx.chatId(), parsedEvent.toBackendMessageText(), ParseMode.HTML);
+    } catch (Exception e) {
+      actionsExecutor.sendMessage(ctx.chatId(), "Error parsing event link: %s".formatted(e.getMessage()));
+    }
   }
 
   private MessageInfo getMessageAndButtonsForUpcomingEvents(long userId) {
