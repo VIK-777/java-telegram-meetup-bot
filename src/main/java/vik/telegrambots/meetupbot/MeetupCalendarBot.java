@@ -67,6 +67,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
+import java.lang.management.ManagementFactory;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -519,6 +520,20 @@ public class MeetupCalendarBot extends AbilityBot implements SpringLongPollingBo
             return;
           }
           parseLinkAndSendMessageWithResult(ctx);
+        })
+        .build();
+  }
+
+  public Ability uptime() {
+    return Ability
+        .builder()
+        .name("uptime")
+        .info("Bot uptime")
+        .locality(USER)
+        .privacy(CREATOR)
+        .action(ctx -> {
+          var startTimeInSeconds = ManagementFactory.getRuntimeMXBean().getStartTime() / 1000;
+          actionsExecutor.sendMessage(ctx.chatId(), "Bot started: ![%1$s](tg://time?unix=%1$s&format=r)".formatted(startTimeInSeconds), ParseMode.MARKDOWN);
         })
         .build();
   }
